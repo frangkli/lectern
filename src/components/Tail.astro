@@ -1,0 +1,7 @@
+---
+// What every page ends with: the hub's script, and on index pages the kit's script (the theme control),
+// which lives outside this project.
+const { kit = false } = Astro.props as { kit?: boolean };
+---
+{kit && <script is:inline src="/assets/kit.js" />}
+<script src="../scripts/hub.js"></script>

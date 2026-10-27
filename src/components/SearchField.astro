@@ -1,0 +1,14 @@
+---
+import Icon from "./Icon.astro";
+
+interface Props {
+  query?: string;
+  large?: boolean;
+  keep?: Record<string, string>;
+}
+const { query = "", large = false, keep = {} } = Astro.props;
+---
+<form class:list={["hub-search", { "hub-search-lg": large }]} action="/" role="search">
+  <label><Icon name="search" /><span class="hub-sr">Search every document</span><input type="search" name="q" value={query} placeholder={large ? "Search titles, paths and text" : "Search"} autocomplete="off" spellcheck="false" /><kbd aria-hidden="true">/</kbd></label>
+  {Object.entries(keep).filter(([, value]) => value).map(([name, value]) => <input type="hidden" name={name} value={value} />)}
+</form>

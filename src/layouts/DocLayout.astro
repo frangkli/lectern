@@ -1,0 +1,42 @@
+---
+// A document served as itself: its own page, with the hub's bar, library and rail added around its
+// content. Markdown documents also get a line naming their kind and date above the title.
+import Chrome from "../components/Chrome.astro";
+import Head from "../components/Head.astro";
+import Rail from "../components/Rail.astro";
+import Tail from "../components/Tail.astro";
+import type { Heading } from "../lib/document";
+import { escapeHtml } from "../lib/document";
+import { kindName, months } from "../lib/format";
+import type { Doc } from "../lib/library";
+
+interface Props {
+  html: string;
+  headings: Heading[];
+  doc: Doc;
+  docs: Doc[];
+  crumbs: [string, string?][];
+  current: unknown;
+}
+const { html, headings, doc, docs, crumbs, current } = Astro.props;
+const attributes = (text = "") => Object.fromEntries([...text.matchAll(/([^\s=]+)(?:="([^"]*)")?/g)].map(([, name, value]) => [name, value ?? ""]));
+const date = new Date(doc.mtime);
+const eyebrow = `${kindName(doc.kind)} · ${months[date.getMonth()].slice(0, 3)} ${date.getDate()}, ${date.getFullYear()}`;
+const page = doc.path.endsWith(".md") ? html.replace(/(<main>)(<h1>[\s\S]*?<\/h1>)/, (_, main, title) => `${main}<header><p class="eyebrow">${escapeHtml(eyebrow)}</p>${title}</header>`) : html;
+const htmlAttributes = attributes(/<html\b([^>]*)>/i.exec(page)?.[1]);
+const head = /<head\b[^>]*>([\s\S]*?)<\/head>/i.exec(page)?.[1] ?? "";
+const bodyMatch = /<body\b([^>]*)>([\s\S]*)<\/body>/i.exec(page);
+const bodyAttributes = attributes(bodyMatch?.[1]);
+const body = bodyMatch?.[2] ?? page;
+---
+<!doctype html>
+<html {...htmlAttributes} data-hub="doc">
+  <head><Fragment set:html={head} /><Head /></head>
+  <body {...bodyAttributes}>
+    <Chrome crumbs={crumbs} doc={doc} current={current} />
+    <Rail doc={doc} headings={headings} docs={docs} />
+    <span id="hub-main" tabindex="-1"></span>
+    <Fragment set:html={body} />
+    <Tail />
+  </body>
+</html>
