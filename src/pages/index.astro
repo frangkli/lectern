@@ -36,20 +36,20 @@ const everything = unique(docs);
 const repoCount = [...repos.values()].filter((repo) => !repo.notes).length;
 ---
 <IndexLayout title={query ? `Search: ${query}` : "Recent"} current="home" home query={query}>
-  <header class="hub-head" slot="head">
+  <header class="lectern-head" slot="head">
     <h1 class:list={{ "is-query": query }}>{query ? `Results for “${query}”` : "Recent"}</h1>
-    <p class="hub-sub">{query ? `${plural(shown.length, "document")} ${shown.length === 1 ? "matches" : "match"}` : <Fragment>{plural(everything.length, "document")} across {plural(repoCount, "repository", "repositories")} and your notes, <span class="hub-warn">{plural(drafts(everything), "draft")}</span></Fragment>}</p>
+    <p class="lectern-sub">{query ? `${plural(shown.length, "document")} ${shown.length === 1 ? "matches" : "match"}` : <Fragment>{plural(everything.length, "document")} across {plural(repoCount, "repository", "repositories")} and your notes, <span class="lectern-warn">{plural(drafts(everything), "draft")}</span></Fragment>}</p>
     <SearchField query={query} large keep={{ kind, status: state }} />
-    <nav class="hub-filters" aria-label="Filter documents">
-      {[kindTabs, stateTabs].map((tabs) => <ul>{tabs.map((tab) => <li class={tab.className}><a href={tab.link} aria-current={tab.on ? "true" : undefined}>{tab.text}<span class="hub-n">{tab.count}</span></a></li>)}</ul>)}
+    <nav class="lectern-filters" aria-label="Filter documents">
+      {[kindTabs, stateTabs].map((tabs) => <ul>{tabs.map((tab) => <li class={tab.className}><a href={tab.link} aria-current={tab.on ? "true" : undefined}>{tab.text}<span class="lectern-n">{tab.count}</span></a></li>)}</ul>)}
     </nav>
   </header>
   {shown.length ? (
     <Fragment>
-      {query ? <div class="hub-results"><DocList groups={[{ rows: shown.slice(0, limit) }]} terms={terms} /></div> : <DocList groups={timeline} clockTime />}
-      {shown.length > limit && <p class="hub-more"><a class="hub-button" href={href({ all: "1" })}>Show all {shown.length}</a></p>}
+      {query ? <div class="lectern-results"><DocList groups={[{ rows: shown.slice(0, limit) }]} terms={terms} /></div> : <DocList groups={timeline} clockTime />}
+      {shown.length > limit && <p class="lectern-more"><a class="lectern-button" href={href({ all: "1" })}>Show all {shown.length}</a></p>}
     </Fragment>
   ) : (
-    <div class="hub-empty"><p class="hub-empty-title">Nothing matches</p><p>{query && "Try fewer or shorter words, or "}<a href="/">clear the search and filters</a>.</p></div>
+    <div class="lectern-empty"><p class="lectern-empty-title">Nothing matches</p><p>{query && "Try fewer or shorter words, or "}<a href="/">clear the search and filters</a>.</p></div>
   )}
 </IndexLayout>

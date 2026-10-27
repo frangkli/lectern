@@ -13,20 +13,20 @@ const state = { draft: ["Draft", "Only on this branch, or changed here"], merged
 const where = doc.worktree.key === "~notes" ? "Notes" : doc.local ? `${doc.repo}, local` : `${doc.repo}, ${doc.worktree.key}`;
 const others = docs.filter((other) => other.repo === doc.repo && other.path === doc.path && other !== doc).toSorted((a, b) => b.mtime - a.mtime);
 ---
-<aside class="hub-rail" aria-label="About this document">
-  <details class="hub-rail-box">
+<aside class="lectern-rail" aria-label="About this document">
+  <details class="lectern-rail-box">
     <summary>{headings.length ? "Contents and details" : "Details"}</summary>
-    {headings.length > 0 && <nav class="hub-toc" aria-label="Contents"><h2>Contents</h2><ol>{headings.map((h) => <li class={`h${h.level}`}><a href={`#${h.id}`}>{h.text}</a></li>)}</ol></nav>}
-    <button class="hub-button hub-copy" type="button" data-copy><Icon name="link" /><span>Copy link</span></button>
-    <section class="hub-details">
+    {headings.length > 0 && <nav class="lectern-toc" aria-label="Contents"><h2>Contents</h2><ol>{headings.map((h) => <li class={`h${h.level}`}><a href={`#${h.id}`}>{h.text}</a></li>)}</ol></nav>}
+    <button class="lectern-button lectern-copy" type="button" data-copy><Icon name="link" /><span>Copy link</span></button>
+    <section class="lectern-details">
       <h2>Details</h2>
       <dl>
         <div><dt>Kind</dt><dd>{kindName(doc.kind)}</dd></div>
-        <div><dt>Status</dt><dd><span class={`hub-state ${status}`}>{state[0]}</span><span class="hub-note">{state[1]}</span></dd></div>
-        <div><dt>Updated</dt><dd><Time ms={doc.mtime} text={ago(doc.mtime)} /><span class="hub-note">{stamp(doc.mtime)}</span></dd></div>
+        <div><dt>Status</dt><dd><span class={`lectern-state ${status}`}>{state[0]}</span><span class="lectern-note">{state[1]}</span></dd></div>
+        <div><dt>Updated</dt><dd><Time ms={doc.mtime} text={ago(doc.mtime)} /><span class="lectern-note">{stamp(doc.mtime)}</span></dd></div>
         <div><dt>Location</dt><dd>{where}<code>{shownPath(doc)}</code></dd></div>
       </dl>
     </section>
-    {others.length > 0 && <section class="hub-versions"><h2>Also on</h2><ul>{others.map((other) => <li><a href={docUrl(other)}><span>{other.worktree.key}</span><Time ms={other.mtime} text={ago(other.mtime)} /></a></li>)}</ul></section>}
+    {others.length > 0 && <section class="lectern-versions"><h2>Also on</h2><ul>{others.map((other) => <li><a href={docUrl(other)}><span>{other.worktree.key}</span><Time ms={other.mtime} text={ago(other.mtime)} /></a></li>)}</ul></section>}
   </details>
 </aside>

@@ -20,22 +20,22 @@ interface Props {
 const { groups, terms = [], kind = true, where = true, clockTime = false, allLocal = false } = Astro.props;
 ---
 {groups.map(({ label, note, rows }) => (
-  <section class="hub-group">
-    {label && <h2><span>{label}</span>{note && <span class="hub-group-note">{note}</span>}<span class="hub-group-n">{plural(rows.length, "document")}</span></h2>}
-    <ol class="hub-list">
+  <section class="lectern-group">
+    {label && <h2><span>{label}</span>{note && <span class="lectern-group-note">{note}</span>}<span class="lectern-group-n">{plural(rows.length, "document")}</span></h2>}
+    <ol class="lectern-list">
       {rows.map(({ doc, snippet }) => {
         const summary = snippet ?? doc.summary;
         const hasMeta = kind || where || terms.length > 0;
         return (
-          <li class="hub-item">
-            <p class="hub-item-head"><a class="hub-title" href={docUrl(doc)} title={shownPath(doc)} data-doc={docUrl(doc)} data-mtime={Math.round(doc.mtime)}><Marked text={doc.title} terms={terms} /></a>{!allLocal && (doc.local ? <span class="hub-flag">Local</span> : !doc.merged && <span class="hub-flag draft">Draft</span>)}</p>
+          <li class="lectern-item">
+            <p class="lectern-item-head"><a class="lectern-title" href={docUrl(doc)} title={shownPath(doc)} data-doc={docUrl(doc)} data-mtime={Math.round(doc.mtime)}><Marked text={doc.title} terms={terms} /></a>{!allLocal && (doc.local ? <span class="lectern-flag">Local</span> : !doc.merged && <span class="lectern-flag draft">Draft</span>)}</p>
             <Time ms={doc.mtime} text={clockTime ? clock(doc.mtime) : ago(doc.mtime)} />
-            {summary && <p class="hub-summary"><Marked text={summary} terms={terms} /></p>}
+            {summary && <p class="lectern-summary"><Marked text={summary} terms={terms} /></p>}
             {hasMeta && (
-              <p class="hub-meta">
+              <p class="lectern-meta">
                 {kind && <span>{kindName(doc.kind)}</span>}
-                {where && <span>{doc.local ? (doc.repo === "notes" ? "Notes" : `${doc.repo}, local`) : <Fragment>{doc.repo}<span class="hub-branch"><Icon name="branch" /><Marked text={doc.worktree.key} terms={terms} /></span></Fragment>}</span>}
-                {terms.length > 0 && <span><span class="hub-path"><Marked text={shownPath(doc)} terms={terms} /></span></span>}
+                {where && <span>{doc.local ? (doc.repo === "notes" ? "Notes" : `${doc.repo}, local`) : <Fragment>{doc.repo}<span class="lectern-branch"><Icon name="branch" /><Marked text={doc.worktree.key} terms={terms} /></span></Fragment>}</span>}
+                {terms.length > 0 && <span><span class="lectern-path"><Marked text={shownPath(doc)} terms={terms} /></span></span>}
               </p>
             )}
           </li>

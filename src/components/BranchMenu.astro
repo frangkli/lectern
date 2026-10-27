@@ -12,11 +12,11 @@ const items = repo.worktrees
   .map((item) => ({ ...item, last: Math.max(0, ...item.own.map((doc) => doc.mtime)) }))
   .toSorted((a, b) => b.last - a.last);
 ---
-<details class="hub-menu">
-  <summary class="hub-button"><Icon name="branch" /><span>{shown.label}</span><span class="hub-sr">: switch branch</span><svg class="hub-i hub-chevron" aria-hidden="true" viewBox="0 0 16 16"><path d="M4 6l4 4 4-4" /></svg></summary>
-  <ul class="hub-menu-list">
+<details class="lectern-menu">
+  <summary class="lectern-button"><Icon name="branch" /><span>{shown.label}</span><span class="lectern-sr">: switch branch</span><svg class="lectern-i lectern-chevron" aria-hidden="true" viewBox="0 0 16 16"><path d="M4 6l4 4 4-4" /></svg></summary>
+  <ul class="lectern-menu-list">
     {items.map(({ candidate, own, last }) => (
-      <li><a href={candidate.url} aria-current={candidate === shown ? "page" : undefined}><span class="hub-menu-name">{candidate.key}</span><span class="hub-menu-meta">{drafts(own) > 0 && <span class="hub-warn">{plural(drafts(own), "draft")}</span>}{last ? <Time ms={last} text={ago(last)} /> : "Empty"}</span></a></li>
+      <li><a href={candidate.url} aria-current={candidate === shown ? "page" : undefined}><span class="lectern-menu-name">{candidate.key}</span><span class="lectern-menu-meta">{drafts(own) > 0 && <span class="lectern-warn">{plural(drafts(own), "draft")}</span>}{last ? <Time ms={last} text={ago(last)} /> : "Empty"}</span></a></li>
     ))}
   </ul>
 </details>

@@ -49,7 +49,7 @@ export interface Library {
 }
 
 const run = promisify(execFile);
-// The folders the hub lists, relative to a checkout. Edit these to add or remove one.
+// The folders Lectern lists, relative to a checkout. Edit these to add or remove one.
 // Committed docs: everything under each of docRoots (internal/docs/ for repos published by an export
 // that drops internal/). localRoot is the main checkout's uncommitted folder, listed on its own.
 export const docRoots = ["docs", "internal/docs"];
@@ -258,7 +258,7 @@ export async function resolveFile(worktree: Worktree, path: string) {
   return info.isFile() || info.isDirectory() ? { file, directory: info.isDirectory() } : undefined;
 }
 
-// A document's file on disk, from a hub URL such as /events?doc= or /raw/. Retries with a fresh scan.
+// A document's file on disk, from a Lectern URL such as /events?doc= or /raw/. Retries with a fresh scan.
 export async function fileFor(pathname: string) {
   for (const fresh of [false, true]) {
     const { worktree, path } = route(pathname, (await library(fresh)).repos);

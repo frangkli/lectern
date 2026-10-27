@@ -1,7 +1,7 @@
 import type { Doc } from "./library";
 import { localRoot } from "./library";
 
-// Every kind the hub knows, in the order it lists them: [one, many]. Any other kind lists after these.
+// Every kind Lectern knows, in the order it lists them: [one, many]. Any other kind lists after these.
 const kinds: Record<string, [string, string]> = {
   plan: ["Plan", "Plans"], spec: ["Spec", "Specs"], research: ["Research", "Research"],
   explainer: ["Explainer", "Explainers"], tradeoff: ["Tradeoff", "Tradeoffs"],

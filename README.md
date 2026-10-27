@@ -31,6 +31,6 @@ For development, run `pnpm dev`, and `pnpm test` for the unit tests. To turn off
 - `/<repo>/<branch>/<path>`: a committed doc on a branch.
 - `/<repo>/~local/<path>`: a doc in that repository's `docs/local/`.
 - `/~notes/<path>`: a note.
-- `/raw/…`: the same doc without the hub around it.
+- `/raw/…`: the same doc without Lectern around it.
 
 Git doesn't allow `~` in branch names, so these never collide with a branch.

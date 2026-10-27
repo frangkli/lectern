@@ -1,4 +1,4 @@
-// A document on its own, without the hub's bar.
+// A document on its own, without Lectern's bar.
 import type { APIRoute } from "astro";
 import { documentHtml } from "../../lib/document";
 import { fileFor } from "../../lib/library";
