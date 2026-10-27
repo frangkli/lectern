@@ -1,0 +1,55 @@
+---
+// Recent documents as a timeline by day, or search results; filtered by kind and by status.
+import DocList from "../components/DocList.astro";
+import SearchField from "../components/SearchField.astro";
+import IndexLayout from "../layouts/IndexLayout.astro";
+import { dayHeading, dayStart, drafts, kindName, kindsIn, plural, statusOf } from "../lib/format";
+import { type Doc, library, unique } from "../lib/library";
+import { search } from "../lib/search";
+
+const { repos, docs } = await library();
+const params = Astro.url.searchParams;
+const query = params.get("q")?.trim() ?? "";
+const kind = params.get("kind") ?? "";
+const state = params.get("status") ?? "";
+const pool: { doc: Doc; snippet?: string }[] = query ? search(docs, query) : unique(docs).toSorted((a, b) => b.mtime - a.mtime).map((doc) => ({ doc }));
+const byKind = (result: { doc: Doc }) => !kind || result.doc.kind === kind;
+const byState = (result: { doc: Doc }) => !state || statusOf(result.doc) === state;
+const shown = pool.filter(byKind).filter(byState);
+const href = (changes: Record<string, string>) => {
+  const next = new URLSearchParams(Object.entries({ q: query, kind, status: state, ...changes }).filter(([, value]) => value));
+  return next.size ? `/?${next}` : "/";
+};
+const kindPool = pool.filter(byState).map((result) => result.doc);
+const statePool = pool.filter(byKind).map((result) => result.doc);
+type Tab = { text: string; count: number; link: string; on: boolean; className?: string };
+const kindTabs: Tab[] = [{ text: "All", count: kindPool.length, link: href({ kind: "" }), on: !kind }, ...kindsIn(kindPool).map((name) => ({ text: kindName(name, true), count: kindPool.filter((doc) => doc.kind === name).length, link: href({ kind: name }), on: kind === name }))];
+const stateTabs: Tab[] = (["draft", "local"] as const).map((name) => ({ text: name === "draft" ? "Drafts" : "Local", count: statePool.filter((doc) => statusOf(doc) === name).length, link: href({ status: state === name ? "" : name }), on: state === name, className: name === "draft" ? "is-draft" : undefined }));
+const limit = params.has("all") ? Infinity : 60;
+const terms = query.toLowerCase().split(/\s+/).filter(Boolean);
+const days = Map.groupBy(shown.slice(0, limit).map(({ doc }) => doc), (doc) => dayStart(doc.mtime));
+const timeline = [...days].map(([day, items]) => {
+  const [label, note] = dayHeading(day);
+  return { label, note, rows: items.map((doc) => ({ doc })) };
+});
+const everything = unique(docs);
+const repoCount = [...repos.values()].filter((repo) => !repo.notes).length;
+---
+<IndexLayout title={query ? `Search: ${query}` : "Recent"} current="home" home query={query}>
+  <header class="hub-head" slot="head">
+    <h1 class:list={{ "is-query": query }}>{query ? `Results for “${query}”` : "Recent"}</h1>
+    <p class="hub-sub">{query ? `${plural(shown.length, "document")} ${shown.length === 1 ? "matches" : "match"}` : <Fragment>{plural(everything.length, "document")} across {plural(repoCount, "repository", "repositories")} and your notes, <span class="hub-warn">{plural(drafts(everything), "draft")}</span></Fragment>}</p>
+    <SearchField query={query} large keep={{ kind, status: state }} />
+    <nav class="hub-filters" aria-label="Filter documents">
+      {[kindTabs, stateTabs].map((tabs) => <ul>{tabs.map((tab) => <li class={tab.className}><a href={tab.link} aria-current={tab.on ? "true" : undefined}>{tab.text}<span class="hub-n">{tab.count}</span></a></li>)}</ul>)}
+    </nav>
+  </header>
+  {shown.length ? (
+    <Fragment>
+      {query ? <div class="hub-results"><DocList groups={[{ rows: shown.slice(0, limit) }]} terms={terms} /></div> : <DocList groups={timeline} clockTime />}
+      {shown.length > limit && <p class="hub-more"><a class="hub-button" href={href({ all: "1" })}>Show all {shown.length}</a></p>}
+    </Fragment>
+  ) : (
+    <div class="hub-empty"><p class="hub-empty-title">Nothing matches</p><p>{query && "Try fewer or shorter words, or "}<a href="/">clear the search and filters</a>.</p></div>
+  )}
+</IndexLayout>

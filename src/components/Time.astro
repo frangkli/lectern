@@ -1,0 +1,6 @@
+---
+import { stamp } from "../lib/format";
+
+const { ms, text } = Astro.props as { ms: number; text: string };
+---
+<time datetime={new Date(ms).toISOString()} title={stamp(ms)}>{text}</time>

@@ -1,0 +1,7 @@
+---
+// Text with the search terms marked.
+import { marks } from "../lib/format";
+
+const { text, terms } = Astro.props as { text: string; terms: string[] };
+---
+{marks(text, terms).map((part) => (part.hit ? <mark>{part.text}</mark> : part.text))}

@@ -1,0 +1,25 @@
+---
+// What every page starts with: the skip link, the icons, the bar, and the library at the left.
+import type { Doc } from "../lib/library";
+import { docUrl } from "../lib/library";
+import Bar from "./Bar.astro";
+import LibraryNav from "./LibraryNav.astro";
+
+interface Props {
+  crumbs?: [string, string?][];
+  doc?: Doc;
+  home?: boolean;
+  query?: string;
+  current?: unknown;
+}
+const { crumbs = [], doc, home = false, query = "", current } = Astro.props;
+const symbols: Record<string, string> = {
+  search: '<circle cx="7.25" cy="7.25" r="4.5"/><path d="m10.6 10.6 3.15 3.15"/>',
+  branch: '<circle cx="4.75" cy="3.75" r="1.5"/><circle cx="4.75" cy="12.25" r="1.5"/><circle cx="11.25" cy="5.25" r="1.5"/><path d="M4.75 5.25v5.5M11.25 6.75c0 2.75-3.5 2.4-5.4 4.1"/>',
+  link: '<path d="M6.75 9.25a2.75 2.75 0 0 0 3.9 0l2-2a2.76 2.76 0 0 0-3.9-3.9l-.6.6"/><path d="M9.25 6.75a2.75 2.75 0 0 0-3.9 0l-2 2a2.76 2.76 0 0 0 3.9 3.9l.6-.6"/>',
+};
+---
+<a class="hub-skip" href="#hub-main">Skip to content</a>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>{Object.entries(symbols).map(([name, paths]) => <symbol id={`hub-${name}`} viewBox="0 0 16 16" set:html={paths} />)}</defs></svg>
+<Bar crumbs={crumbs} doc={doc && { url: docUrl(doc), mtime: doc.mtime }} home={home} query={query} />
+<LibraryNav current={current} />

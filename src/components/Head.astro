@@ -1,0 +1,13 @@
+---
+// What every page adds to its head: the saved theme before first paint, the kit's two faces and the
+// hub's styles. Index pages also take the kit's CSS; a document carries its own.
+import { Font } from "astro:assets";
+import theme from "../scripts/theme.js?raw";
+
+const { kit = false } = Astro.props as { kit?: boolean };
+---
+<script is:inline set:html={theme} />
+<Font cssVariable="--font-hanken" preload />
+<Font cssVariable="--font-geist-mono" />
+{kit && <link rel="stylesheet" href="/assets/kit.css" />}
+<link rel="stylesheet" href="/assets/hub.css" />

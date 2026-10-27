@@ -1,0 +1,29 @@
+---
+// An index page: the bar and the library, then a head and the content in one column.
+import Chrome from "../components/Chrome.astro";
+import Head from "../components/Head.astro";
+import Tail from "../components/Tail.astro";
+
+interface Props {
+  title: string;
+  crumbs?: [string, string?][];
+  current?: unknown;
+  home?: boolean;
+  query?: string;
+}
+const { title, crumbs = [], current, home = false, query = "" } = Astro.props;
+---
+<!doctype html>
+<html lang="en" data-hub>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title} · Docs</title>
+    <Head kit />
+  </head>
+  <body class:list={["hub-body", { "hub-home": home }]}>
+    <Chrome crumbs={crumbs} current={current} home={home} query={query} />
+    <main class="hub-page" id="hub-main" tabindex="-1"><slot name="head" /><slot /></main>
+    <Tail kit />
+  </body>
+</html>

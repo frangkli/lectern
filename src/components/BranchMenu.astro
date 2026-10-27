@@ -1,0 +1,22 @@
+---
+// A small menu of a repository's branches and worktrees, newest first, each with its drafts and its
+// last change.
+import { ago, drafts, plural } from "../lib/format";
+import type { Doc, Repo, Worktree } from "../lib/library";
+import Icon from "./Icon.astro";
+import Time from "./Time.astro";
+
+const { repo, docs, shown } = Astro.props as { repo: Repo; docs: Doc[]; shown: Worktree };
+const items = repo.worktrees
+  .map((candidate) => ({ candidate, own: docs.filter((doc) => doc.worktree === candidate) }))
+  .map((item) => ({ ...item, last: Math.max(0, ...item.own.map((doc) => doc.mtime)) }))
+  .toSorted((a, b) => b.last - a.last);
+---
+<details class="hub-menu">
+  <summary class="hub-button"><Icon name="branch" /><span>{shown.label}</span><span class="hub-sr">: switch branch</span><svg class="hub-i hub-chevron" aria-hidden="true" viewBox="0 0 16 16"><path d="M4 6l4 4 4-4" /></svg></summary>
+  <ul class="hub-menu-list">
+    {items.map(({ candidate, own, last }) => (
+      <li><a href={candidate.url} aria-current={candidate === shown ? "page" : undefined}><span class="hub-menu-name">{candidate.key}</span><span class="hub-menu-meta">{drafts(own) > 0 && <span class="hub-warn">{plural(drafts(own), "draft")}</span>}{last ? <Time ms={last} text={ago(last)} /> : "Empty"}</span></a></li>
+    ))}
+  </ul>
+</details>
