@@ -11,7 +11,7 @@ interface Props {
 const { crumbs, doc, home, query } = Astro.props;
 ---
 <div class="hub-bar" role="banner" data-doc={doc?.url} data-mtime={doc && Math.round(doc.mtime)}>
-  <a class="hub-mark" href="/">Docs</a>
+  <a class="hub-mark" href="/">Lectern</a>
   {crumbs.length ? (
     <nav class="hub-crumbs" aria-label="Breadcrumb"><ol>{crumbs.map(([text, url], i) => (i < crumbs.length - 1 && url ? <li><a href={url}>{text}</a></li> : <li><span aria-current="page">{text}</span></li>))}</ol></nav>
   ) : <span class="hub-crumbs"></span>}
