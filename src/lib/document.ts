@@ -1,11 +1,14 @@
 import { readFile } from "node:fs/promises";
 import { basename, extname } from "node:path";
+import GithubSlugger from "github-slugger";
 import { defineMdastPlugin, markdownToHtml } from "satteri";
+import { codeBlock, loadLanguages } from "./code";
 import { kitFile } from "./config";
 
 export const escapeHtml = (text: string) =>
   String(text).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]!);
 const entities: Record<string, string> = { amp: "&", lt: "<", gt: ">", quot: '"', nbsp: " " };
+const decodeHtml = (html: string) => html.replace(/&(?:#(\d+)|#x([\da-f]+)|(\w+));/gi, (m, dec, hex, name) => (dec || hex ? String.fromCodePoint(dec ? Number(dec) : parseInt(hex, 16)) : (entities[name] ?? m)));
 export const stripTags = (html: string) =>
   html.replace(/<[^>]+>/g, " ").replace(/&(\w+);/g, (m, name) => entities[name] ?? m).replace(/\s+/g, " ").trim();
 
@@ -41,11 +44,35 @@ const rawHtmlAsText = defineMdastPlugin({
   },
 });
 
-// CommonMark with GitHub's extensions, through Sätteri. Mermaid fences become diagrams, and wide
-// tables scroll inside the column.
+// Fenced code, highlighted on the server (see code.ts). It runs after rawHtmlAsText, so the HTML it
+// writes stays HTML. Mermaid stays for the kit to draw.
+const codeBlocks = defineMdastPlugin({
+  name: "code-blocks",
+  code(node, ctx) {
+    const html = node.lang && node.lang !== "mermaid" && codeBlock(node.value, node.lang, node.meta ?? "");
+    if (html) ctx.replaceNode(node, { type: "html", value: html });
+  },
+});
+
+// GitHub's alerts (> [!NOTE], [!TIP], [!IMPORTANT], [!WARNING], [!CAUTION]) become the kit's callouts:
+// a note plain, a tip green, something important ochre like a decision, a warning or caution red.
+// This reads the rendered HTML because Sätteri 0.11.1 misreads text nodes in any document with a
+// non-ASCII character.
+const alerts: Record<string, [string, string]> = {
+  note: ["Note", "callout"], tip: ["Tip", "callout recommend"], important: ["Important", "callout decision"],
+  warning: ["Warning", "callout risk"], caution: ["Caution", "callout risk"],
+};
+const callouts = (html: string) =>
+  html.replace(/<blockquote>\n<p>\[!(note|tip|important|warning|caution)\](?:[ \t]*<\/p>\n<p>|[ \t]*\n|[ \t]+)?/gi, (_, kind: string) => {
+    const [title, className] = alerts[kind.toLowerCase()];
+    return `<blockquote class="${className}">\n<p><strong class="callout-title">${title}</strong> `;
+  });
+
+// CommonMark with GitHub's extensions, through Sätteri. Code is highlighted, alerts become callouts,
+// Mermaid fences become diagrams, and wide tables scroll inside the column. Call loadLanguages first.
 export const markdown = (source: string) =>
-  markdownToHtml(source, { features: { gfm: true }, mdastPlugins: [rawHtmlAsText] })
-    .html.replace(/<pre><code class="language-mermaid">([\s\S]*?)<\/code><\/pre>/g, '<pre class="mermaid">$1</pre>')
+  callouts(markdownToHtml(source, { features: { gfm: true }, mdastPlugins: [rawHtmlAsText, codeBlocks] }).html)
+    .replace(/<pre><code class="language-mermaid">([\s\S]*?)<\/code><\/pre>/g, '<pre class="mermaid">$1</pre>')
     .replace(/<table>[\s\S]*?<\/table>/g, '<div class="scroll">$&</div>');
 
 // The kit's CSS or script, read from the visual-doc template so Lectern matches every document.
@@ -87,15 +114,16 @@ export interface Heading {
 // for the contents. Tags and badges inside a heading stay out of its text.
 export function withHeadingIds(html: string) {
   const used = new Set<string>();
+  // GitHub's ids, so a #link written against GitHub's rendering lands on the same heading here.
+  const slugger = new GithubSlugger();
   const headings: Heading[] = [];
   const nested = nestedHeadings(html);
   const out = html.replace(/<h([23])\b([^>]*)>([\s\S]*?)<\/h\1>/gi, (match, level, attributes, inner, offset) => {
     const text = stripTags(inner.replace(/<(span|small)\b[^>]*class="[^"]*\b(tag|badge)\b[^"]*"[^>]*>[\s\S]*?<\/\1>/gi, ""));
     let id = /\sid="([^"]+)"/i.exec(attributes)?.[1];
     if (!id) {
-      const base = text.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, "-").replace(/^-|-$/g, "") || "section";
-      id = base;
-      for (let n = 2; used.has(id); n++) id = `${base}-${n}`;
+      do id = slugger.slug(text) || "section";
+      while (used.has(id));
       match = `<h${level}${attributes} id="${id}">${inner}</h${level}>`;
     }
     used.add(id);
@@ -109,11 +137,13 @@ export function withHeadingIds(html: string) {
 // document carries a copy of the kit from when it was written; it gets the current one instead.
 export async function documentHtml(file: string) {
   const source = await readFile(file, "utf8");
-  const [style, script] = await Promise.all([kit("style"), kit("script")]);
+  const [style, script] = await Promise.all([kit("style"), kit("script"), loadLanguages(source)]);
   if (extname(file) !== ".md") {
+    // Code the author wrote as <pre><code class="language-…"> is highlighted like Markdown's.
+    const html = source.replace(/<pre>\s*<code class="language-([\w+-]+)">([^<]*)<\/code>\s*<\/pre>/g, (block, lang, code) => codeBlock(decodeHtml(code), lang) ?? block);
     // Without a kit to serve (the template is missing), the document keeps its own.
-    if (!style) return withHeadingIds(source);
-    return withHeadingIds(source
+    if (!style) return withHeadingIds(html);
+    return withHeadingIds(html
       .replace(/(<style id="kit">)[\s\S]*?(<\/style>)/, (_, open, close) => open + style + close)
       .replace(/(<script id="kit-js">)[\s\S]*?(<\/script>)/, (_, open, close) => open + script + close));
   }
