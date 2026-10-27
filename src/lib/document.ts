@@ -85,7 +85,7 @@ export interface Heading {
 
 // Gives every h2 and h3 an id (keeping existing ones), for deep links, and lists the section headings
 // for the contents. Tags and badges inside a heading stay out of its text.
-function withHeadingIds(html: string) {
+export function withHeadingIds(html: string) {
   const used = new Set<string>();
   const headings: Heading[] = [];
   const nested = nestedHeadings(html);

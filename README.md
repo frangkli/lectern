@@ -16,7 +16,7 @@ HOST=127.0.0.1 PORT=7777 node ./dist/server/entry.mjs
 
 It has no login, so bind it to loopback as above, and put it behind something that controls access, such as `tailscale serve`, to read from another device.
 
-For development, run `pnpm dev`. To turn off Astro's anonymous usage data, run `pnpm astro telemetry disable` once.
+For development, run `pnpm dev`, and `pnpm test` for the unit tests. To turn off Astro's anonymous usage data, run `pnpm astro telemetry disable` once.
 
 ## Settings
 
