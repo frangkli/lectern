@@ -12,58 +12,50 @@ import { type Doc, docRoots, docUrl, library, resolveFile, route } from "../lib/
 import { types } from "../lib/types";
 
 const pathname = decodeURIComponent(Astro.url.pathname);
-// A request that finds nothing, like a link to a document saved a moment ago, scans again before it says so.
 const resolve = async (fresh: boolean) => {
   const lib = await library(fresh);
   const { repo, worktree, path, extra } = route(pathname, lib.repos);
   const main = repo && (repo.worktrees.find((candidate) => candidate.main) ?? repo.worktrees[0]);
   const shown = worktree ?? main;
   const doc = shown && path ? lib.docs.find((candidate) => candidate.worktree === shown && candidate.path === path) : undefined;
-  return { ...lib, repo, worktree, path, extra, main, shown, doc };
+  const missing = !repo || !main || !shown || (path ? !doc || !worktree : extra);
+  return { docs: lib.docs, repo, worktree, path, main, shown, doc, missing };
 };
+// A request that finds nothing, like a link to a document saved a moment ago, scans again before it says so.
 let page = await resolve(false);
-if (!page.repo || !page.shown || (page.path && (!page.doc || !page.worktree)) || (!page.path && page.extra)) page = await resolve(true);
-const { docs, repo, worktree, path, extra, main, shown, doc } = page;
+if (page.missing) page = await resolve(true);
+const { docs, repo, worktree, path, main, shown, doc } = page;
 
-let found: Awaited<ReturnType<typeof resolveFile>>;
 // A document's images and other files resolve beside it, so its relative links work in the hub.
-if (repo && path && worktree && !doc && !/\.(md|html)$/.test(path)) {
-  found = await resolveFile(worktree, path);
+if (worktree && path && !doc && !/\.(md|html)$/.test(path)) {
+  const found = await resolveFile(worktree, path);
   if (found && !found.directory) return new Response(await readFile(found.file), { headers: { "content-type": types[extname(found.file).toLowerCase()] ?? "application/octet-stream", "x-content-type-options": "nosniff" } });
 }
 // A link into a removed worktree, or to a file the worktree no longer has, falls back to the main checkout.
-if (repo && path && (!doc || !worktree)) {
-  const fallback = docs.find((candidate) => candidate.worktree === main && candidate.path === path);
-  if (fallback) return Astro.redirect(docUrl(fallback), 302);
-}
-const missing = !repo || !shown || (path && (!doc || !worktree)) || (!path && extra);
-if (doc) found = await resolveFile(shown!, path!);
-if (missing || (doc && !found)) Astro.response.status = 404;
-const rendered = doc && found && !missing ? await documentHtml(found.file) : undefined;
+const fallback = path && (!doc || !worktree) && docs.find((candidate) => candidate.worktree === main && candidate.path === path);
+if (fallback) return Astro.redirect(docUrl(fallback), 302);
+const found = doc && (await resolveFile(shown!, path!));
+if (page.missing || !repo || !main || !shown || (doc && !found)) return Astro.rewrite("/404");
 
-const crumbs: [string, string?][] = !repo || !shown ? [["Not found"]] : repo.notes ? [["Notes", shown.url]] : [[repo.name, main!.url], [shown.local ? "local" : shown.key, shown.url]];
+const crumbs: [string, string?][] = repo.notes ? [["Notes", shown.url]] : [[repo.name, main.url], [shown.local ? "local" : shown.key, shown.url]];
+const rendered = found && (await documentHtml(found.file));
 // The docs a worktree's view lists: its own, plus the repo's local docs in the main checkout's view.
-const list = !repo || !shown ? [] : (shown.local ? docs.filter((d) => d.worktree === shown) : docs.filter((d) => d.worktree === shown || (shown.main && d.worktree === repo.local))).toSorted((a, b) => b.mtime - a.mtime);
+const list = (shown.local ? docs.filter((d) => d.worktree === shown) : docs.filter((d) => d.worktree === shown || (shown.main && d.worktree === repo.local))).toSorted((a, b) => b.mtime - a.mtime);
 const count = drafts(list);
-const picker = repo && !repo.notes && repo.worktrees.length > 1;
+const picker = !repo.notes && repo.worktrees.length > 1;
 // Notes and local folders group by folder, and show each note's kind; committed docs group by kind.
-const byFolder = Boolean(repo?.notes || shown?.local);
+const byFolder = Boolean(repo.notes || shown.local);
 const groups = byFolder ? Map.groupBy(list, (d) => (d.path.includes("/") ? d.path.slice(0, d.path.lastIndexOf("/")) : "")) : Map.groupBy(list, (d) => d.kind);
 const keys = byFolder ? [...groups.keys()].toSorted() : kindsIn(list);
 const listGroups = keys.map((key) => ({ label: byFolder ? (key ? `${key}/` : "Top level") : kindName(key, true), rows: groups.get(key)!.map((d: Doc) => ({ doc: d })) }));
 ---
 {rendered ? (
   <DocLayout html={rendered.html} headings={rendered.headings} doc={doc!} docs={docs} crumbs={[...crumbs, [doc!.title]]} current={repo} />
-) : missing || !repo || !shown ? (
-  <IndexLayout title="Not found" crumbs={[["Not found"]]}>
-    <header class="hub-head" slot="head"><h1>Not found</h1><p class="hub-sub">No checkout on this box has this document. It may have lived on a branch whose worktree was removed.</p></header>
-    <p><a class="hub-button" href="/">Back to recent documents</a></p>
-  </IndexLayout>
 ) : (
   <IndexLayout title={repo.notes ? "Notes" : `${repo.name} · ${shown.label}`} crumbs={crumbs} current={repo}>
     <header class="hub-head" slot="head">
       <h1>{repo.notes ? "Notes" : repo.name}</h1>
-      <div class="hub-sub">{plural(list.length, "document")}{!repo.notes && <Fragment> on {picker ? <BranchMenu repo={repo} docs={docs} shown={shown.local ? main! : shown} /> : shown.label}</Fragment>}{count > 0 && <span class="hub-warn">, {plural(count, "draft")}</span>}</div>
+      <div class="hub-sub">{plural(list.length, "document")}{!repo.notes && <Fragment> on {picker ? <BranchMenu repo={repo} docs={docs} shown={shown.local ? main : shown} /> : shown.label}</Fragment>}{count > 0 && <span class="hub-warn">, {plural(count, "draft")}</span>}</div>
     </header>
     {list.length ? (
       <DocList groups={listGroups} kind={byFolder} where={false} allLocal={byFolder} />

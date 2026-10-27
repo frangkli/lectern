@@ -11,12 +11,12 @@ Lectern needs Node 24 and pnpm.
 ```sh
 pnpm install
 pnpm build
-HOST=127.0.0.1 PORT=7777 pnpm start
+HOST=127.0.0.1 PORT=7777 node ./dist/server/entry.mjs
 ```
 
-It binds to loopback. It has no login, so put it behind something that controls access, such as `tailscale serve`, if you want to read from another device.
+It has no login, so bind it to loopback as above, and put it behind something that controls access, such as `tailscale serve`, to read from another device.
 
-For development, `pnpm dev` serves with live reload.
+For development, run `pnpm dev`. To turn off Astro's anonymous usage data, run `pnpm astro telemetry disable` once.
 
 ## Settings
 

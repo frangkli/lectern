@@ -1,4 +1,4 @@
-/* The hub, on the kit's tokens (/assets/kit.css). A bar sits on every page and the library at the
+/* The hub, on the kit's tokens (served at /assets/kit.css). A bar sits on every page and the library at the
    left; the page is one centred column, and a document adds its contents at the right. Lists of
    documents are plain lists: no rules, no boxes, space between entries. Controls are square-cornered
    (6px at most). Colour appears only where it means something: ochre for drafts, blue for new and

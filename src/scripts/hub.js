@@ -1,6 +1,5 @@
 // The hub's behaviour: "/" to search, branch pickers, unread marks, copy link, and on a document the
-// rail, its scroll spy and live reload. Inlined into every page, before the kit's script, so unread
-// marks show on first paint.
+// rail, its scroll spy and live reload.
 {
   const bar = document.querySelector(".hub-bar");
   addEventListener("keydown", (event) => {

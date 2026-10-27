@@ -1,11 +1,7 @@
 ---
-// What every page ends with: the hub's script, the kit's script on index pages, and prerendering.
-// Links to other hub pages prerender while the pointer rests on them, so a click shows a finished page.
-import hub from "../scripts/hub.js?raw";
-
+// What every page ends with: the hub's script, and on index pages the kit's script (the theme control),
+// which lives outside this project.
 const { kit = false } = Astro.props as { kit?: boolean };
-const speculation = JSON.stringify({ prerender: [{ where: { and: [{ href_matches: "/*" }, { not: { href_matches: "/raw/*" } }] }, eagerness: "moderate" }] });
 ---
-<script is:inline set:html={hub} />
 {kit && <script is:inline src="/assets/kit.js" />}
-<script is:inline type="speculationrules" set:html={speculation} />
+<script src="../scripts/hub.js"></script>
