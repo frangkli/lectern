@@ -1,4 +1,5 @@
 import { describe, expect, test } from "vitest";
+import { loadLanguages } from "./code";
 import { markdown, parseDocument, withHeadingIds } from "./document";
 import { ago, marks } from "./format";
 import { type Doc, type Repo, type Worktree, route, unique } from "./library";
@@ -13,6 +14,26 @@ const doc = (fields: Partial<Doc>): Doc => ({
 describe("markdown", () => {
   test("shows raw HTML as text", () => {
     expect(markdown("<script>alert(1)</script>\n")).not.toContain("<script>");
+  });
+  test("turns GitHub alerts into the kit's callouts and leaves other quotes alone", () => {
+    expect(markdown("> [!WARNING]\n> Mind the **gap**.\n")).toContain('<blockquote class="callout risk">\n<p><strong class="callout-title">Warning</strong> Mind the <strong>gap</strong>.</p>\n</blockquote>');
+    expect(markdown("> [!TIP]\n> Try this.\n")).toContain('<blockquote class="callout recommend">');
+    expect(markdown("> Just a quote.\n")).toContain("<blockquote>\n<p>Just a quote.");
+  });
+  test("keeps callouts and code titles in a document with non-ASCII text", async () => {
+    const source = '> [!NOTE]\n> Café − déjà vu.\n\n```ts title="naïve.ts"\nconst s = "—";\n```\n';
+    await loadLanguages(source);
+    const html = markdown(source);
+    expect(html).toContain('<blockquote class="callout">\n<p><strong class="callout-title">Note</strong> Café − déjà vu.</p>');
+    expect(html).toContain("<figcaption>naïve.ts</figcaption>");
+  });
+  test("highlights code on the server, with a title and marked lines", async () => {
+    const source = '```ts title="src/a.ts" {2}\nconst a = 1;\nconst b = 2;\n```\n\n```zzz\nplain\n```\n';
+    await loadLanguages(source);
+    const html = markdown(source);
+    expect(html).toContain('<figure class="lectern-code"><figcaption>src/a.ts</figcaption><pre class="shiki');
+    expect(html).toMatch(/<span class="line highlighted">.*const.*b/);
+    expect(html).toContain('<pre><code class="language-zzz">plain');
   });
   test("turns mermaid fences into diagrams and wraps tables", () => {
     expect(markdown("```mermaid\ngraph TD\n```\n")).toContain('<pre class="mermaid">graph TD');
@@ -32,10 +53,10 @@ describe("parseDocument", () => {
 });
 
 describe("withHeadingIds", () => {
-  test("adds unique ids, keeps existing ones and leaves component headings out of the contents", () => {
-    const { html, headings } = withHeadingIds('<h2>Intro</h2><h2>Intro</h2><h3 id="kept">Kept</h3><div class="callout"><h3>Inside</h3></div>');
-    expect(html).toContain('<h2 id="intro-2">Intro</h2>');
-    expect(headings.map((h) => h.id)).toEqual(["intro", "intro-2", "kept"]);
+  test("adds GitHub's ids, keeps existing ones and leaves component headings out of the contents", () => {
+    const { html, headings } = withHeadingIds('<h2>Intro</h2><h2>Intro</h2><h2>A &amp; B</h2><h3 id="kept">Kept</h3><div class="callout"><h3>Inside</h3></div>');
+    expect(html).toContain('<h2 id="intro-1">Intro</h2>');
+    expect(headings.map((h) => h.id)).toEqual(["intro", "intro-1", "a--b", "kept"]);
   });
 });
 

@@ -1,5 +1,5 @@
 // Lectern's behaviour: "/" to search, branch pickers, unread marks, copy link, and on a document the
-// rail, its scroll spy and live reload.
+// rail, its scroll spy, live reload, and code and table controls.
 {
   const bar = document.querySelector(".lectern-bar");
   addEventListener("keydown", (event) => {
@@ -87,5 +87,57 @@
     for (const link of links) link.addEventListener("click", () => wide.matches || rail.hidePopover());
     // Live reload: the server sends an event when the file changes on disk.
     new EventSource("/events?doc=" + encodeURIComponent(bar.dataset.doc)).onmessage = () => location.reload();
+  }
+
+  // Code, after the kit has put each block in a .code box with its copy button: blocks wider than the
+  // column get a wrap toggle, and blocks over 25 lines fold to 20 until opened.
+  for (const pre of document.querySelectorAll("main pre.shiki")) {
+    const box = pre.parentElement;
+    if (pre.scrollWidth > pre.clientWidth) {
+      const wrap = Object.assign(document.createElement("button"), { type: "button", className: "lectern-wrap", title: "Wrap lines" });
+      wrap.setAttribute("aria-label", "Wrap lines");
+      wrap.setAttribute("aria-pressed", "false");
+      wrap.innerHTML = '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2.75 4.25h10.5M2.75 8h8.5a2 2 0 0 1 0 4H8.75m1.5-1.5-1.5 1.5 1.5 1.5M2.75 11.75h3"/></svg>';
+      wrap.addEventListener("click", () => wrap.setAttribute("aria-pressed", String(pre.classList.toggle("lectern-wrapped"))));
+      box.append(wrap);
+    }
+    const lines = pre.querySelectorAll(".line").length;
+    if (lines > 25) {
+      box.classList.add("lectern-folded");
+      const more = Object.assign(document.createElement("button"), { type: "button", className: "lectern-button lectern-unfold", textContent: `Show all ${lines} lines` });
+      more.addEventListener("click", () => {
+        box.classList.remove("lectern-folded");
+        more.remove();
+      });
+      box.after(more);
+    }
+  }
+
+  // Tables: a column of numbers aligns right unless the author aligned it, a table of three or more rows
+  // sorts by its header, and a table that fits the column lets its header stick (see lectern.css).
+  const number = (text) => (/^[−-]?[$€£]?[\d,]*\.?\d+(?:e[+-]?\d+)?\s*(?:%|×|[a-zµ]{1,3})?$/i.test(text) ? parseFloat(text.replace("−", "-").replace(/[^\d.e-]/gi, "")) : null);
+  for (const table of document.querySelectorAll("main table")) {
+    const head = table.tHead?.rows[0];
+    const body = table.tBodies[0];
+    if (!head || !body || table.querySelector("[rowspan], [colspan]")) continue;
+    const rows = [...body.rows];
+    [...head.cells].forEach((th, col) => {
+      const text = (row) => row.cells[col]?.textContent.trim() ?? "";
+      const numeric = rows.some(text) && rows.every((row) => !text(row) || number(text(row)) !== null);
+      if (numeric && !th.style.textAlign) for (const cell of [th, ...rows.map((row) => row.cells[col])]) cell?.classList.add("lectern-num");
+      if (rows.length < 3) return;
+      const sort = Object.assign(document.createElement("button"), { type: "button", className: "lectern-sort" });
+      sort.append(...th.childNodes);
+      th.append(sort);
+      sort.addEventListener("click", () => {
+        const order = th.getAttribute("aria-sort") === "ascending" ? "descending" : "ascending";
+        for (const other of head.cells) other.removeAttribute("aria-sort");
+        th.setAttribute("aria-sort", order);
+        const sorted = rows.toSorted((a, b) => (numeric ? (number(text(a)) ?? -Infinity) - (number(text(b)) ?? -Infinity) : text(a).localeCompare(text(b), undefined, { numeric: true })));
+        body.append(...(order === "ascending" ? sorted : sorted.reverse()));
+      });
+    });
+    const scroller = table.parentElement;
+    if (scroller.matches(".scroll, .table-wrap")) new ResizeObserver(() => scroller.classList.toggle("lectern-fits", table.scrollWidth <= scroller.clientWidth)).observe(scroller);
   }
 }
