@@ -18,6 +18,33 @@ function frontMatter(source: string) {
   return { fields, body: match ? source.slice(match[0].length) : source };
 }
 
+export interface Decision {
+  question: string;
+  default?: string;
+}
+
+// The decisions a document leaves to its reader: the kit's <ol class="decisions"> in HTML, and in
+// Markdown a numbered list inside a > [!IMPORTANT] alert. An item's "Default:" part is its default.
+function decisionsIn(source: string, html: boolean): Decision[] {
+  const decision = (text: string) => {
+    const [question, value] = text.replace(/!?\[([^\]]*)\]\([^)]*\)/g, "$1").replace(/\*\*|__|`/g, "").split(/\s*\bDefault:\s*/);
+    return { question: question.trim(), default: value?.trim() || undefined };
+  };
+  if (html) return [...source.matchAll(/<ol class="decisions">([\s\S]*?)<\/ol>/g)].flatMap((list) => [...list[1].matchAll(/<li\b[^>]*>([\s\S]*?)<\/li>/g)].map((item) => decision(stripTags(item[1]))));
+  const decisions: Decision[] = [];
+  for (const block of source.matchAll(/^>[ \t]*\[!IMPORTANT\][ \t]*\n((?:>.*(?:\n|$))*)/gim)) {
+    let item: string | undefined;
+    for (const line of block[1].split("\n").map((line) => line.replace(/^>[ \t]?/, ""))) {
+      const start = /^\d+[.)]\s+(.*)$/.exec(line);
+      if (start && item !== undefined) decisions.push(decision(item));
+      if (start) item = start[1];
+      else if (item !== undefined && line.trim()) item += ` ${line.trim()}`;
+    }
+    if (item !== undefined) decisions.push(decision(item));
+  }
+  return decisions;
+}
+
 // Title, kind, summary and searchable text. Kind comes from <meta name="doc-kind"> or `kind:` front
 // matter. The summary is the lede, else the first paragraph after the title.
 export function parseDocument(source: string, path: string) {
@@ -28,12 +55,12 @@ export function parseDocument(source: string, path: string) {
     const body = source.replace(/<(script|style|head)\b[\s\S]*?<\/\1>/gi, " ");
     const afterTitle = body.slice(Math.max(0, body.search(/<\/h1>/i)));
     const lede = /<p\b[^>]*\blede\b[^>]*>([\s\S]*?)<\/p>/i.exec(body)?.[1] ?? /<p(?![^>]*\beyebrow\b)[^>]*>([\s\S]*?)<\/p>/i.exec(afterTitle)?.[1];
-    return { title: stripTags(title ?? ""), kind, summary: clip(stripTags(lede ?? "")), text: stripTags(body) };
+    return { title: stripTags(title ?? ""), kind, summary: clip(stripTags(lede ?? "")), text: stripTags(body), decisions: decisionsIn(source, true) };
   }
   const { fields, body } = frontMatter(source);
   const prose = body.replace(/^```[\s\S]*?^```/gm, "").split(/\n\s*\n/).find((block) => /^\s*[\p{L}*_`[(]/u.test(block) && !/^\s*([-*+] |\d+[.)] |\|)/.test(block));
   const summary = (prose ?? "").replace(/!?\[([^\]]*)\]\([^)]*\)/g, "$1").replace(/[`*_]/g, "").replace(/\s+/g, " ").trim();
-  return { title: fields.title || /^# (.+)$/m.exec(body)?.[1] || "", kind: fields.kind, summary: clip(fields.description || summary), text: body };
+  return { title: fields.title || /^# (.+)$/m.exec(body)?.[1] || "", kind: fields.kind, summary: clip(fields.description || summary), text: body, decisions: decisionsIn(body, false) };
 }
 
 // Raw HTML in a Markdown document shows as text, so a document can never run code in Lectern.
@@ -68,10 +95,18 @@ const callouts = (html: string) =>
     return `<blockquote class="${className}">\n<p><strong class="callout-title">${title}</strong> `;
   });
 
+// A > [!IMPORTANT] alert that holds a numbered list is the reader's decisions, shown as the kit's
+// decisions list with each "Default:" line as the item's default. Runs before callouts.
+const decisionLists = (html: string) =>
+  html.replace(/<blockquote>\n<p>\[!IMPORTANT\]<\/p>\n<ol>([\s\S]*?)<\/ol>\n<\/blockquote>/gi, (_, items: string) =>
+    `<ol class="decisions">${items
+      .replace(/<p>Default:\s*([\s\S]*?)<\/p>/g, '<span class="default">Default: $1</span>')
+      .replace(/\nDefault:\s*([\s\S]*?)(<\/p>\s*)?(?=<\/li>)/g, '<span class="default">Default: $1</span>$2')}</ol>`);
+
 // CommonMark with GitHub's extensions, through Sätteri. Code is highlighted, alerts become callouts,
 // Mermaid fences become diagrams, and wide tables scroll inside the column. Call loadLanguages first.
 export const markdown = (source: string) =>
-  callouts(markdownToHtml(source, { features: { gfm: true }, mdastPlugins: [rawHtmlAsText, codeBlocks] }).html)
+  callouts(decisionLists(markdownToHtml(source, { features: { gfm: true }, mdastPlugins: [rawHtmlAsText, codeBlocks] }).html))
     .replace(/<pre><code class="language-mermaid">([\s\S]*?)<\/code><\/pre>/g, '<pre class="mermaid">$1</pre>')
     .replace(/<table>[\s\S]*?<\/table>/g, '<div class="scroll">$&</div>');
 

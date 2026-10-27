@@ -10,7 +10,7 @@ import { access, lstat, readdir, readFile, realpath, stat } from "node:fs/promis
 import { basename, join, posix, relative, sep } from "node:path";
 import { promisify } from "node:util";
 import { notesDir, roots } from "./config";
-import { parseDocument } from "./document";
+import { type Decision, parseDocument } from "./document";
 
 export interface Worktree {
   dir: string;
@@ -41,6 +41,7 @@ export interface Doc {
   mtime: number;
   merged: boolean;
   local?: boolean;
+  decisions: Decision[];
 }
 export interface Library {
   at: number;
@@ -161,10 +162,10 @@ async function flatDocs(repo: Repo, folder: Worktree) {
     const file = join(root!, path);
     const [content, info] = await Promise.all([readFile(file, "utf8"), stat(file)]).catch(() => []);
     if (!content || !info) continue;
-    const { title, kind, summary, text } = parseDocument(content, entry.name);
+    const { title, kind, summary, text, decisions } = parseDocument(content, entry.name);
     const date = /\d{4}-\d{2}-\d{2}/.exec(entry.name)?.[0] ?? new Date(info.mtimeMs).toISOString().slice(0, 10);
     const place = repo.notes ? `notes/${path}` : `${repo.name} · ${localRoot}/${path}`;
-    docs.push({ repo: repo.name, worktree: folder, path, place, title: title || entry.name, summary, text, date, kind: kind?.toLowerCase() || "note", mtime: info.mtimeMs, merged: true, local: true });
+    docs.push({ repo: repo.name, worktree: folder, path, place, title: title || entry.name, summary, text, date, kind: kind?.toLowerCase() || "note", mtime: info.mtimeMs, merged: true, local: true, decisions });
   }
   return docs;
 }
@@ -183,9 +184,9 @@ async function scan(repos: Map<string, Repo>) {
         const [content, info] = await Promise.all([readFile(file), lstat(file)]).catch(() => []);
         if (!content || !info?.isFile()) continue;
         const blob = createHash(algorithm).update(`blob ${content.length}\0`).update(content).digest("hex");
-        const { title, kind, summary, text } = parseDocument(content.toString("utf8"), path);
+        const { title, kind, summary, text, decisions } = parseDocument(content.toString("utf8"), path);
         const date = /\d{4}-\d{2}-\d{2}/.exec(path)?.[0] ?? new Date(info.mtimeMs).toISOString().slice(0, 10);
-        const doc = { repo: repo.name, worktree, path, place: `${repo.name} · ${worktree.key} · ${path}`, title: title || basename(path), summary, text, date };
+        const doc = { repo: repo.name, worktree, path, place: `${repo.name} · ${worktree.key} · ${path}`, title: title || basename(path), summary, text, date, decisions };
         const isMerged = merged.get(path) === blob || inherited.get(path) === blob;
         docs.push({ ...doc, kind: kind?.toLowerCase() || folderKind(path), mtime: info.mtimeMs, merged: isMerged });
       }

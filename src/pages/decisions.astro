@@ -1,0 +1,31 @@
+---
+// The decisions documents leave to you, as each document's current text states them: agents revise a
+// document in place, so a settled decision drops out. Newest document first.
+import Icon from "../components/Icon.astro";
+import Time from "../components/Time.astro";
+import IndexLayout from "../layouts/IndexLayout.astro";
+import { ago, kindName, plural, shownPath } from "../lib/format";
+import { docUrl, library, unique } from "../lib/library";
+
+const { docs } = await library();
+const asking = unique(docs).filter((doc) => doc.decisions.length).toSorted((a, b) => b.mtime - a.mtime);
+const count = asking.reduce((sum, doc) => sum + doc.decisions.length, 0);
+---
+<IndexLayout title="Decisions" current="decisions" crumbs={[["Decisions"]]}>
+  <header class="lectern-head" slot="head">
+    <h1>Decisions</h1>
+    <p class="lectern-sub">{count ? `${plural(count, "decision")} in ${plural(asking.length, "document")}, newest first` : "No document is waiting on a decision"}</p>
+  </header>
+  {asking.length > 0 && (
+    <ol class="lectern-list">
+      {asking.map((doc) => (
+        <li class="lectern-item lectern-asking">
+          <p class="lectern-item-head"><a class="lectern-title" href={docUrl(doc)} title={shownPath(doc)} data-doc={docUrl(doc)} data-mtime={Math.round(doc.mtime)}>{doc.title}</a>{doc.local ? <span class="lectern-flag">Local</span> : !doc.merged && <span class="lectern-flag draft">Draft</span>}</p>
+          <Time ms={doc.mtime} text={ago(doc.mtime)} />
+          <ol class="decisions">{doc.decisions.map((decision) => <li>{decision.question}{decision.default && <span class="default">Default: {decision.default}</span>}</li>)}</ol>
+          <p class="lectern-meta"><span>{kindName(doc.kind)}</span><span>{doc.local ? (doc.repo === "notes" ? "Notes" : `${doc.repo}, local`) : <Fragment>{doc.repo}<span class="lectern-branch"><Icon name="branch" />{doc.worktree.key}</span></Fragment>}</span></p>
+        </li>
+      ))}
+    </ol>
+  )}
+</IndexLayout>
