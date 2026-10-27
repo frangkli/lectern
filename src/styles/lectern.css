@@ -21,7 +21,9 @@
 @view-transition { navigation: auto; }
 ::view-transition-group(*), ::view-transition-old(*), ::view-transition-new(*) { animation: none; }
 
-/* Controls. Hover and press states change at once: a list is scanned fast, and a fade reads as lag. */
+/* Controls. Hover and press states ease over 120 ms on the kit's curve; the kit turns transitions off
+   for readers who ask for reduced motion. */
+:is(.lectern-button, .lectern-search label, .lectern-menu > summary, .lectern-menu-list a, .lectern-crumbs a, .lectern-bar .theme button, .lectern-nav a, .lectern-filters a, .lectern-toc a) { transition: color 120ms var(--ease), background-color 120ms var(--ease), border-color 120ms var(--ease), box-shadow 120ms var(--ease); }
 .lectern-button { display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 10px; font: 500 13px/1 var(--font); color: var(--ink); text-decoration: none; white-space: nowrap; background: var(--bg); border: 1px solid var(--border); border-radius: var(--control); cursor: pointer; }
 .lectern-button:hover { background: var(--sunken); }
 .lectern-button .lectern-i { width: 14px; height: 14px; }
@@ -43,6 +45,8 @@
 .lectern-menu > summary::before { content: none; }
 .lectern-menu .lectern-chevron { width: 12px; height: 12px; color: var(--muted); }
 .lectern-menu[open] > summary { background: var(--sunken); }
+@starting-style { .lectern-menu[open] .lectern-menu-list { opacity: 0; translate: 0 -4px; } }
+.lectern-menu-list { transition: opacity 120ms var(--ease), translate 120ms var(--ease); }
 .lectern-menu-list { position: absolute; z-index: 30; top: calc(100% + 4px); left: 0; min-width: 340px; max-height: 60vh; padding: 4px; overflow-y: auto; background: var(--bg); border: 1px solid var(--border); border-radius: var(--control); box-shadow: 0 8px 24px color-mix(in oklab, var(--ink) 10%, transparent); }
 .lectern-menu-list a { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; padding: 7px 8px; font-size: 14px; line-height: 1.4; color: var(--text); text-decoration: none; border-radius: 4px; }
 .lectern-menu-list a:hover { background: var(--sunken); }
@@ -52,7 +56,7 @@
 
 /* The bar. */
 .lectern-bar { position: sticky; z-index: 20; top: 0; display: flex; align-items: center; gap: 24px; height: var(--bar); padding: 0 20px 0 24px; font: 14px/1.4 var(--font); letter-spacing: -0.01em; background: var(--bg); border-bottom: 1px solid var(--border-soft); }
-.lectern-mark { flex: none; font-size: 20px; font-weight: 600; letter-spacing: -0.02em; color: var(--ink); text-decoration: none; }
+.lectern-mark { display: flex; flex: none; align-items: center; gap: 8px; font-size: 20px; font-weight: 600; letter-spacing: -0.02em; color: var(--ink); text-decoration: none; }
 .lectern-crumbs { flex: 1; min-width: 0; }
 .lectern-crumbs ol { display: flex; align-items: center; white-space: nowrap; }
 .lectern-crumbs li { display: flex; flex: none; min-width: 0; white-space: nowrap; color: var(--muted); }
@@ -145,17 +149,21 @@
    in view is marked on it in black. */
 .lectern-rail { font-size: 14px; line-height: 20px; }
 .lectern-rail h2 { margin: 0 0 8px; padding: 0; font-size: 13px; font-weight: 500; line-height: 1.4; letter-spacing: 0; color: var(--muted); border: 0; }
-.lectern-rail-box { margin: 0; }
-.lectern-toc h2 { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+.lectern-mark img { flex: none; margin: 0; }
 .lectern-toc ol { box-shadow: inset 2px 0 var(--border-soft); }
 .lectern-toc li + li { margin-top: 12px; }
 .lectern-toc a { display: block; padding-left: 20px; letter-spacing: -0.01em; color: var(--muted); text-decoration: none; }
 .lectern-toc a:hover { color: var(--ink); }
 .lectern-toc a[aria-current] { color: var(--ink); box-shadow: inset 2px 0 var(--ink); }
 .lectern-toc .h3 a { padding-left: 32px; }
-.lectern-copy { height: 28px; margin-top: 20px; padding: 0 10px; font-size: 12.5px; }
+/* Once the page has settled, a subsection eases open or shut as its section scrolls in or out. */
+.lectern-toc[data-ready] li { interpolate-size: allow-keywords; overflow: clip; transition: height 160ms var(--ease), margin-top 160ms var(--ease), opacity 160ms var(--ease), display 160ms allow-discrete; }
+.lectern-toc[data-ready] li[hidden] { display: none; height: 0; margin-top: 0; opacity: 0; }
+@starting-style { .lectern-toc[data-ready] li { height: 0; margin-top: 0; opacity: 0; } }
+.lectern-copy { height: 28px; padding: 0 10px; font-size: 12.5px; }
 .lectern-copy .lectern-i { width: 13px; height: 13px; }
-:is(.lectern-details, .lectern-versions) { margin-top: 32px; }
+:is(.lectern-details, .lectern-versions) { margin-top: 28px; }
+.lectern-toc { margin-top: 32px; }
 .lectern-details dl { display: grid; gap: 12px; margin: 0; max-width: none; font-size: 13px; line-height: 1.4; }
 .lectern-details dt { font-size: 12px; color: var(--muted); }
 .lectern-details dd { display: flex; flex-direction: column; gap: 1px; min-width: 0; margin: 1px 0 0; color: var(--ink); }
@@ -177,11 +185,10 @@
 }
 @media (min-width: 1200px) {
   [data-lectern="doc"] { --main-left: max(0px, calc((100vw - var(--page) - var(--toc-gap) - var(--toc)) / 2)); }
-  .lectern-rail { position: fixed; top: var(--bar); bottom: 0; left: calc(var(--main-left) + var(--page) + var(--toc-gap)); width: var(--toc); padding: 32px 0 32px; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: none; }
+  /* The rail is a popover for narrow screens; here it shows beside the page whether open or not. */
+  .lectern-rail-head { display: none; }
+  .lectern-rail[popover] { position: fixed; inset: var(--bar) auto 0 calc(var(--main-left) + var(--page) + var(--toc-gap)); display: block; width: var(--toc); height: auto; margin: 0; padding: 32px 0; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: none; color: inherit; background: none; border: 0; }
   .lectern-rail ~ main { margin-left: var(--main-left); margin-right: auto; }
-  .lectern-rail-box { border: 0; }
-  .lectern-rail-box > summary { display: none; }
-  .lectern-rail-box > summary + * { margin-top: 0; }
 }
 @media (min-width: 1440px) {
   [data-lectern="doc"] { --main-left: calc((100vw - var(--page)) / 2); }
@@ -197,9 +204,19 @@
   .lectern-page { padding-top: 28px; }
 }
 @media (max-width: 1199px) {
-  .lectern-rail { max-width: var(--page); margin: 0 auto; padding: 16px var(--gutter) 0; }
-  .lectern-rail-box[open] { padding-bottom: 16px; }
-  .lectern-rail-box > summary + * { margin-top: 8px; }
+  /* The menu button sits at the top left of the column and opens the rail as a drawer from the left. */
+  .lectern-rail-head { max-width: var(--page); margin: 0 auto; padding: 16px var(--gutter) 0; }
+  .lectern-rail-open { width: 32px; padding: 0; justify-content: center; }
+  .lectern-rail-open .lectern-i { width: 16px; height: 16px; }
+  .lectern-rail[popover] { position: fixed; inset: 0 auto 0 0; width: min(320px, 86vw); height: 100dvh; max-height: none; margin: 0; padding: 24px 20px 32px; overflow-y: auto; overscroll-behavior: contain; color: var(--text); background: var(--bg); border: 0; border-right: 1px solid var(--border); translate: -100% 0; transition: translate 200ms var(--ease), overlay 200ms allow-discrete, display 200ms allow-discrete; }
+  .lectern-rail:popover-open { translate: 0 0; }
+  @starting-style { .lectern-rail:popover-open { translate: -100% 0; } }
+  .lectern-rail::backdrop { background: rgb(0 0 0 / 0.32); opacity: 0; transition: opacity 200ms ease-out, overlay 200ms allow-discrete, display 200ms allow-discrete; }
+  .lectern-rail:popover-open::backdrop { opacity: 1; }
+  @starting-style { .lectern-rail:popover-open::backdrop { opacity: 0; } }
+}
+@media (max-width: 1199px) and (prefers-reduced-motion: reduce) {
+  .lectern-rail::backdrop { transition: none; }
 }
 @media (max-width: 759px) {
   .lectern-bar { position: static; flex-wrap: wrap; gap: 10px 12px; height: auto; padding: 12px 16px; }
@@ -219,4 +236,4 @@
   .lectern-summary { white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
   .lectern-menu-list { min-width: min(340px, calc(100vw - 32px)); }
 }
-@media print { .lectern-bar, .lectern-nav, .lectern-rail, .lectern-skip { display: none; } .lectern-rail ~ main { margin: 0 auto; } }
+@media print { .lectern-bar, .lectern-nav, .lectern-rail, .lectern-rail-head, .lectern-skip { display: none; } .lectern-rail ~ main { margin: 0 auto; } }

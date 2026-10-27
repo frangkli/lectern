@@ -11,7 +11,7 @@ interface Props {
 const { crumbs, doc, home, query } = Astro.props;
 ---
 <div class="lectern-bar" role="banner" data-doc={doc?.url} data-mtime={doc && Math.round(doc.mtime)}>
-  <a class="lectern-mark" href="/">Lectern</a>
+  <a class="lectern-mark" href="/"><img src="/icon-192.png" alt="" width="28" height="28" />Lectern</a>
   {crumbs.length ? (
     <nav class="lectern-crumbs" aria-label="Breadcrumb"><ol>{crumbs.map(([text, url], i) => (i < crumbs.length - 1 && url ? <li><a href={url}>{text}</a></li> : <li><span aria-current="page">{text}</span></li>))}</ol></nav>
   ) : <span class="lectern-crumbs"></span>}
