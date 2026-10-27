@@ -14,14 +14,14 @@ const entry = (repo: Repo) => {
   return { repo, count: own.length, drafts: drafts(own), main: repo.worktrees.find((other) => other.main) ?? repo.worktrees[0] };
 };
 ---
-<nav class="hub-nav" aria-label="Library">
-  <ul><li><a href="/" aria-current={current === "home" ? "page" : undefined}><span class="hub-index-name">Recent</span></a></li></ul>
+<nav class="lectern-nav" aria-label="Library">
+  <ul><li><a href="/" aria-current={current === "home" ? "page" : undefined}><span class="lectern-index-name">Recent</span></a></li></ul>
   {groups.filter(([, repos]) => repos.length).map(([heading, repos]) => (
     <Fragment>
       <h2>{heading}</h2>
       <ul>
         {repos.map(entry).map(({ repo, count, drafts, main }) => (
-          <li><a href={main.url} aria-current={repo === current ? "page" : undefined}><span class="hub-index-name">{repo.notes ? "Notes" : repo.name}</span><span class="hub-index-n">{count}<span class="hub-sr"> documents</span>{drafts > 0 && <Fragment><span aria-hidden="true">/</span><span class="hub-warn"><span class="hub-sr">, </span>{drafts}<span class="hub-sr"> {drafts === 1 ? "draft" : "drafts"}</span></span></Fragment>}</span></a></li>
+          <li><a href={main.url} aria-current={repo === current ? "page" : undefined}><span class="lectern-index-name">{repo.notes ? "Notes" : repo.name}</span><span class="lectern-index-n">{count}<span class="lectern-sr"> documents</span>{drafts > 0 && <Fragment><span aria-hidden="true">/</span><span class="lectern-warn"><span class="lectern-sr">, </span>{drafts}<span class="lectern-sr"> {drafts === 1 ? "draft" : "drafts"}</span></span></Fragment>}</span></a></li>
         ))}
       </ul>
     </Fragment>

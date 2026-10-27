@@ -33,7 +33,7 @@ export function parseDocument(source: string, path: string) {
   return { title: fields.title || /^# (.+)$/m.exec(body)?.[1] || "", kind: fields.kind, summary: clip(fields.description || summary), text: body };
 }
 
-// Raw HTML in a Markdown document shows as text, so a document can never run code in the hub.
+// Raw HTML in a Markdown document shows as text, so a document can never run code in Lectern.
 const rawHtmlAsText = defineMdastPlugin({
   name: "raw-html-as-text",
   html(node, ctx) {
@@ -48,7 +48,7 @@ export const markdown = (source: string) =>
     .html.replace(/<pre><code class="language-mermaid">([\s\S]*?)<\/code><\/pre>/g, '<pre class="mermaid">$1</pre>')
     .replace(/<table>[\s\S]*?<\/table>/g, '<div class="scroll">$&</div>');
 
-// The kit's CSS or script, read from the visual-doc template so the hub matches every document.
+// The kit's CSS or script, read from the visual-doc template so Lectern matches every document.
 export async function kit(tag: "style" | "script") {
   const template = await readFile(kitFile, "utf8").catch(() => "");
   return new RegExp(`<${tag} id="kit(?:-js)?">([\\s\\S]*?)</${tag}>`).exec(template)?.[1] ?? "";

@@ -1,5 +1,5 @@
 ---
-// A document served as itself: its own page, with the hub's bar, library and rail added around its
+// A document served as itself: its own page, with Lectern's bar, library and rail added around its
 // content. Markdown documents also get a line naming their kind and date above the title.
 import Chrome from "../components/Chrome.astro";
 import Head from "../components/Head.astro";
@@ -30,12 +30,12 @@ const bodyAttributes = attributes(bodyMatch?.[1]);
 const body = bodyMatch?.[2] ?? page;
 ---
 <!doctype html>
-<html {...htmlAttributes} data-hub="doc">
+<html {...htmlAttributes} data-lectern="doc">
   <head><Fragment set:html={head} /><Head /></head>
   <body {...bodyAttributes}>
     <Chrome crumbs={crumbs} doc={doc} current={current} />
     <Rail doc={doc} headings={headings} docs={docs} />
-    <span id="hub-main" tabindex="-1"></span>
+    <span id="lectern-main" tabindex="-1"></span>
     <Fragment set:html={body} />
     <Tail />
   </body>

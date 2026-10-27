@@ -14,16 +14,16 @@ interface Props {
 const { title, crumbs = [], current, home = false, query = "" } = Astro.props;
 ---
 <!doctype html>
-<html lang="en" data-hub>
+<html lang="en" data-lectern>
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{title} · Lectern</title>
     <Head kit />
   </head>
-  <body class:list={["hub-body", { "hub-home": home }]}>
+  <body class:list={["lectern-body", { "lectern-home": home }]}>
     <Chrome crumbs={crumbs} current={current} home={home} query={query} />
-    <main class="hub-page" id="hub-main" tabindex="-1"><slot name="head" /><slot /></main>
+    <main class="lectern-page" id="lectern-main" tabindex="-1"><slot name="head" /><slot /></main>
     <Tail kit />
   </body>
 </html>

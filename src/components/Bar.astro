@@ -1,5 +1,5 @@
 ---
-// The hub's bar, on every page: home, where you are, search, theme.
+// Lectern's bar, on every page: home, where you are, search, theme.
 import SearchField from "./SearchField.astro";
 
 interface Props {
@@ -10,10 +10,10 @@ interface Props {
 }
 const { crumbs, doc, home, query } = Astro.props;
 ---
-<div class="hub-bar" role="banner" data-doc={doc?.url} data-mtime={doc && Math.round(doc.mtime)}>
-  <a class="hub-mark" href="/">Lectern</a>
+<div class="lectern-bar" role="banner" data-doc={doc?.url} data-mtime={doc && Math.round(doc.mtime)}>
+  <a class="lectern-mark" href="/">Lectern</a>
   {crumbs.length ? (
-    <nav class="hub-crumbs" aria-label="Breadcrumb"><ol>{crumbs.map(([text, url], i) => (i < crumbs.length - 1 && url ? <li><a href={url}>{text}</a></li> : <li><span aria-current="page">{text}</span></li>))}</ol></nav>
-  ) : <span class="hub-crumbs"></span>}
-  <div class="hub-tools">{!home && <SearchField query={query} />}<div data-theme-control></div></div>
+    <nav class="lectern-crumbs" aria-label="Breadcrumb"><ol>{crumbs.map(([text, url], i) => (i < crumbs.length - 1 && url ? <li><a href={url}>{text}</a></li> : <li><span aria-current="page">{text}</span></li>))}</ol></nav>
+  ) : <span class="lectern-crumbs"></span>}
+  <div class="lectern-tools">{!home && <SearchField query={query} />}<div data-theme-control></div></div>
 </div>
