@@ -54,14 +54,12 @@
     });
   }
 
-  const box = document.querySelector(".lectern-rail-box");
-  if (box) {
-    // The rail is always open beside the page, and a closed disclosure above it on narrow screens.
+  const rail = document.querySelector(".lectern-rail");
+  if (rail) {
+    // The rail sits beside the page on wide screens, and is a drawer from the menu button on narrow ones.
     const wide = matchMedia("(min-width: 1200px)");
-    const sync = () => (box.open = wide.matches);
-    sync();
-    wide.addEventListener("change", sync);
-    const links = [...box.querySelectorAll(".lectern-toc a")];
+    wide.addEventListener("change", () => wide.matches && rail.matches(":popover-open") && rail.hidePopover());
+    const links = [...rail.querySelectorAll(".lectern-toc a")];
     const targets = links.map((link) => document.getElementById(decodeURIComponent(link.hash.slice(1))));
     // With three or more sections, each subsection belongs to the section above it and folds away
     // until that section is in view. section[i] is the section of subsection i.
@@ -84,7 +82,9 @@
     };
     addEventListener("scroll", () => (queued ||= requestAnimationFrame(spy)), { passive: true });
     spy();
-    for (const link of links) link.addEventListener("click", () => wide.matches || (box.open = false));
+    // Subsections ease open and shut from here on; the first fold above happens before anything moves.
+    requestAnimationFrame(() => rail.querySelector(".lectern-toc")?.setAttribute("data-ready", ""));
+    for (const link of links) link.addEventListener("click", () => wide.matches || rail.hidePopover());
     // Live reload: the server sends an event when the file changes on disk.
     new EventSource("/events?doc=" + encodeURIComponent(bar.dataset.doc)).onmessage = () => location.reload();
   }
