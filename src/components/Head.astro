@@ -10,6 +10,9 @@ const { kit = false } = Astro.props as { kit?: boolean };
   // The saved theme, set before the page first paints so a page never flashes the system's theme.
   try { const t = localStorage.getItem("theme"); if (t === "light" || t === "dark") document.documentElement.dataset.theme = t; } catch {}
 </script>
+<link rel="icon" href="/favicon.ico" />
+<link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+<link rel="manifest" href="/manifest.webmanifest" />
 <Font cssVariable="--font-hanken" preload />
 <Font cssVariable="--font-geist-mono" />
 {kit && <link rel="stylesheet" href="/assets/kit.css" />}
