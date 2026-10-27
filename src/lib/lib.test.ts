@@ -8,7 +8,7 @@ import { search } from "./search";
 const worktree = (key: string, main = false): Worktree => ({ dir: `/repos/app/${key}`, key, label: key, url: `/app/${key}`, main });
 const doc = (fields: Partial<Doc>): Doc => ({
   repo: "app", worktree: worktree("main", true), path: "docs/a.md", place: "app", title: "", summary: "", text: "",
-  date: "", kind: "note", mtime: 0, merged: true, ...fields,
+  date: "", kind: "note", mtime: 0, merged: true, decisions: [], ...fields,
 });
 
 describe("markdown", () => {
@@ -35,6 +35,12 @@ describe("markdown", () => {
     expect(html).toMatch(/<span class="line highlighted">.*const.*b/);
     expect(html).toContain('<pre><code class="language-zzz">plain');
   });
+  test("shows a numbered list in an IMPORTANT alert as the kit's decisions, with defaults", () => {
+    expect(markdown("> [!IMPORTANT]\n> 1. Keep the path?\n>    Default: yes, for 30 days.\n> 2. Drop it?\n")).toBe(
+      '<ol class="decisions">\n<li>Keep the path?<span class="default">Default: yes, for 30 days.</span></li>\n<li>Drop it?</li>\n</ol>\n',
+    );
+    expect(markdown("> [!IMPORTANT]\n> Read this first.\n")).toContain('<blockquote class="callout decision">');
+  });
   test("turns mermaid fences into diagrams and wraps tables", () => {
     expect(markdown("```mermaid\ngraph TD\n```\n")).toContain('<pre class="mermaid">graph TD');
     expect(markdown("| a |\n|---|\n| 1 |\n")).toMatch(/^<div class="scroll"><table>/);
@@ -45,6 +51,12 @@ describe("parseDocument", () => {
   test("reads Markdown front matter, else the first heading and paragraph", () => {
     expect(parseDocument("---\ntitle: Plan A\nkind: plan\n---\nBody.", "a.md")).toMatchObject({ title: "Plan A", kind: "plan", summary: "Body." });
     expect(parseDocument("# Heading\n\n- a list\n\nThe **first** paragraph.", "a.md")).toMatchObject({ title: "Heading", summary: "The first paragraph." });
+  });
+  test("lists the decisions a document leaves open, in Markdown or the kit's HTML", () => {
+    const md = "# Plan\n\n> [!IMPORTANT]\n> 1. Keep **the** path?\n>    Default: yes.\n> 2. Drop it?\n\n> [!IMPORTANT]\n> Not a list.\n";
+    expect(parseDocument(md, "a.md").decisions).toEqual([{ question: "Keep the path?", default: "yes." }, { question: "Drop it?", default: undefined }]);
+    const html = '<h1>Plan</h1><ol class="decisions"><li>Ship it?<span class="default">Default: yes, behind a flag.</span></li></ol>';
+    expect(parseDocument(html, "a.html").decisions).toEqual([{ question: "Ship it?", default: "yes, behind a flag." }]);
   });
   test("reads an HTML document's title, kind and lede", () => {
     const html = '<title>Spec B</title><meta name="doc-kind" content="spec"><h1>Spec B</h1><p class="eyebrow">Spec</p><p>The lede &amp; more.</p>';

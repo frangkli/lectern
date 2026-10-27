@@ -127,6 +127,10 @@
 .lectern-title::after { content: ""; position: absolute; inset: 0; }
 .lectern-title:focus-visible { outline: 0; }
 .lectern-title:focus-visible::after { outline: 2px solid var(--focus); outline-offset: -2px; border-radius: var(--control); }
+/* The decisions page: a document's decisions sit above its row's link, so their text can be selected,
+   and only the title opens the document. */
+.lectern-asking:hover { background: none; }
+.lectern-asking > .decisions { position: relative; z-index: 1; grid-column: 1; margin: 4px 0 8px; }
 .lectern-flag { margin-left: 8px; font-size: 13px; font-weight: 500; color: var(--muted); }
 .lectern-flag.draft { color: var(--warn); }
 .lectern-flag.unread { color: var(--info); }

@@ -1,12 +1,14 @@
 ---
 // The library: recent documents, then every repository and the notes, with how many documents and
-// drafts each holds. Every page shows it at the left; current is the repository shown, or "home".
+// drafts each holds. Every page shows it at the left; current is the repository shown, "home" or
+// "decisions".
 import { drafts } from "../lib/format";
 import { library, type Repo, unique } from "../lib/library";
 
 const { current } = Astro.props as { current?: unknown };
 const { repos, docs } = await library();
 const all = unique(docs);
+const open = all.reduce((sum, doc) => sum + doc.decisions.length, 0);
 const list = [...repos.values()];
 const groups: [string | undefined, Repo[]][] = [["Repositories", list.filter((repo) => !repo.notes)], ["Notes", list.filter((repo) => repo.notes)]];
 const entry = (repo: Repo) => {
@@ -15,7 +17,10 @@ const entry = (repo: Repo) => {
 };
 ---
 <nav class="lectern-nav" aria-label="Library">
-  <ul><li><a href="/" aria-current={current === "home" ? "page" : undefined}><span class="lectern-index-name">Recent</span></a></li></ul>
+  <ul>
+    <li><a href="/" aria-current={current === "home" ? "page" : undefined}><span class="lectern-index-name">Recent</span></a></li>
+    <li><a href="/decisions" aria-current={current === "decisions" ? "page" : undefined}><span class="lectern-index-name">Decisions</span>{open > 0 && <span class="lectern-index-n">{open}<span class="lectern-sr"> open</span></span>}</a></li>
+  </ul>
   {groups.filter(([, repos]) => repos.length).map(([heading, repos]) => (
     <Fragment>
       <h2>{heading}</h2>
