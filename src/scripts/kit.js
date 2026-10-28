@@ -252,7 +252,8 @@
             try {
               mermaid.initialize(config(block.clientWidth));
               await mermaid.parse(source(i));
-              const { svg, bindFunctions } = await mermaid.render(id, source(i));
+              // Drawn inside the block, so labels are measured in the type they'll show in (a <pre> resets letter-spacing).
+              const { svg, bindFunctions } = await mermaid.render(id, source(i), block);
               if (run !== pass) return;
               block.innerHTML = svg;
               bindFunctions?.(block);
@@ -277,7 +278,9 @@
             crossOrigin: "anonymous",
             referrerPolicy: "no-referrer",
           });
-          script.addEventListener("load", () => {
+          script.addEventListener("load", async () => {
+            // Labels measured in the fallback font come out too narrow once the web font arrives.
+            await document.fonts.ready;
             render();
             // Redraw when the theme changes, from the control, Lectern or the system.
             new MutationObserver(render).observe(document.documentElement, { attributeFilter: ["data-theme"] });
