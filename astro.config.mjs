@@ -29,8 +29,6 @@ export default defineConfig({
       LECTERN_ROOTS: envField.string({ context: 'server', access: 'secret', optional: true }),
       // The notes folder. Default: ~/workspace/notes.
       LECTERN_NOTES: envField.string({ context: 'server', access: 'secret', optional: true }),
-      // The visual-doc template whose kit styles every page. Default: the installed visual-doc skill's.
-      LECTERN_KIT: envField.string({ context: 'server', access: 'secret', optional: true }),
     },
   },
 });

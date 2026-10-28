@@ -3,7 +3,8 @@ import { basename, extname, posix } from "node:path";
 import GithubSlugger from "github-slugger";
 import { defineMdastPlugin, markdownToHtml } from "satteri";
 import { codeBlock, loadLanguages } from "./code";
-import { kitFile } from "./config";
+import script from "../scripts/kit.js?raw";
+import style from "../styles/kit.css?raw";
 
 export const escapeHtml = (text: string) =>
   String(text).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]!);
@@ -125,11 +126,9 @@ export const htmlCodeBlocks = (html: string) =>
     return codeBlock(decodeHtml(code), lang, lines ? `{${lines}}` : "", title && decodeHtml(title)) ?? block;
   });
 
-// The kit's CSS or script, read from the visual-doc template so Lectern matches every document.
-export async function kit(tag: "style" | "script") {
-  const template = await readFile(kitFile, "utf8").catch(() => "");
-  return new RegExp(`<${tag} id="kit(?:-js)?">([\\s\\S]*?)</${tag}>`).exec(template)?.[1] ?? "";
-}
+// Lectern's copy of the kit: styles Markdown, index pages, and HTML documents that carry a kit of their own.
+// It started as visual-doc's and may drift from it, but it must keep styling the classes those documents use.
+export const kit = { style, script };
 
 // The offsets of the h2 and h3 that sit inside a component (a card, phase, tab, callout, figure or
 // details). Their titles name parts of a figure, not sections, so they stay out of the contents list.
@@ -199,14 +198,12 @@ export function linkSources(html: string, files: Set<string>, href: (path: strin
 }
 
 // A document as the browser gets it: Markdown rendered with the kit, every heading linkable. An HTML
-// document carries a copy of the kit from when it was written; it gets the current one instead.
+// document carries a copy of the kit from when it was written; it gets Lectern's instead.
 export async function documentHtml(file: string) {
   const source = await readFile(file, "utf8");
-  const [style, script] = await Promise.all([kit("style"), kit("script"), loadLanguages(source)]);
+  await loadLanguages(source);
   if (extname(file) !== ".md") {
     const html = htmlCodeBlocks(source);
-    // Without a kit to serve (the template is missing), the document keeps its own.
-    if (!style) return withHeadingIds(html);
     return withHeadingIds(html
       .replace(/(<style id="kit">)[\s\S]*?(<\/style>)/, (_, open, close) => open + style + close)
       .replace(/(<script id="kit-js">)[\s\S]*?(<\/script>)/, (_, open, close) => open + script + close));

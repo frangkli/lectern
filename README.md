@@ -24,7 +24,6 @@ For development, run `pnpm dev`, and `pnpm test` for the unit tests. To turn off
 |---|---|---|
 | `LECTERN_ROOTS` | `~/workspace` | Folders holding your clones, separated by `:`. Lectern finds each clone's worktrees wherever they live. |
 | `LECTERN_NOTES` | `~/workspace/notes` | The notes folder. |
-| `LECTERN_KIT` | `~/.agents/skills/visual-doc/assets/template.html` | The HTML template whose `<style id="kit">` and `<script id="kit-js">` style every page. |
 
 ## URLs
 
