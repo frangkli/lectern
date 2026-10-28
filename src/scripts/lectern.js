@@ -32,8 +32,12 @@
   let since = read("lectern:since", 0);
   if (!since) write("lectern:since", (since = Date.now()));
   const seen = read("lectern:seen", {});
-  // A page prerendered on hover counts as read only once it is shown.
-  const markRead = () => write("lectern:seen", { ...read("lectern:seen", {}), [bar.dataset.doc]: Number(bar.dataset.mtime) });
+  // A page prerendered on hover counts as read only once it is shown. The server keeps a copy of what
+  // you read, for "changes since your last read".
+  const markRead = () => {
+    write("lectern:seen", { ...read("lectern:seen", {}), [bar.dataset.doc]: Number(bar.dataset.mtime) });
+    navigator.sendBeacon("/read?doc=" + encodeURIComponent(bar.dataset.doc));
+  };
   if (bar.dataset.doc) document.prerendering ? document.addEventListener("prerenderingchange", markRead, { once: true }) : markRead();
   for (const link of document.querySelectorAll("[data-doc]:not(.lectern-bar)")) {
     const mtime = Number(link.dataset.mtime);

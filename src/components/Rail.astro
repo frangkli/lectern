@@ -1,5 +1,6 @@
 ---
-// The rail beside a document: Copy link, what it is and where else it lives, then its contents.
+// The rail beside a document: Copy link, what it is, what to compare it with and where else it lives,
+// then its contents.
 // Narrow screens open it as a drawer from the menu button above the document.
 import type { Heading } from "../lib/document";
 import { ago, kindName, shownPath, stamp, statusOf } from "../lib/format";
@@ -7,11 +8,13 @@ import { type Doc, docUrl } from "../lib/library";
 import Icon from "./Icon.astro";
 import Time from "./Time.astro";
 
-const { doc, headings, docs } = Astro.props as { doc: Doc; headings: Heading[]; docs: Doc[] };
+const { doc, headings, docs, read, against } = Astro.props as { doc: Doc; headings: Heading[]; docs: Doc[]; read?: { mtime: number }; against: string | null };
 const status = statusOf(doc);
 const state = { draft: ["Draft", "Only on this branch, or changed here"], merged: ["Merged", "On the default branch"], local: ["Local", "Never committed"] }[status];
 const where = doc.worktree.key === "~notes" ? "Notes" : doc.local ? `${doc.repo}, local` : `${doc.repo}, ${doc.worktree.key}`;
 const others = docs.filter((other) => other.repo === doc.repo && other.path === doc.path && other !== doc).toSorted((a, b) => b.mtime - a.mtime);
+// The versions this one can be compared with: the one you last read, and each other branch's copy.
+const compare = [...(read ? [{ key: "read", text: "Since your last read", ms: read.mtime }] : []), ...others.map((other) => ({ key: other.worktree.key, text: `Against ${other.worktree.key}`, ms: other.mtime }))];
 const label = headings.length ? "Contents and details" : "Details";
 ---
 <div class="lectern-rail-head">
@@ -28,6 +31,7 @@ const label = headings.length ? "Contents and details" : "Details";
       <div><dt>Location</dt><dd>{where}<code>{shownPath(doc)}</code></dd></div>
     </dl>
   </section>
+  {compare.length > 0 && <section class="lectern-versions"><h2>Changes</h2><ul>{compare.map((item) => <li><a href={`${docUrl(doc)}?diff=${encodeURIComponent(item.key)}`} aria-current={item.key === against ? "page" : undefined}><span>{item.text}</span><Time ms={item.ms} text={ago(item.ms)} /></a></li>)}</ul></section>}
   {others.length > 0 && <section class="lectern-versions"><h2>Also on</h2><ul>{others.map((other) => <li><a href={docUrl(other)}><span>{other.worktree.key}</span><Time ms={other.mtime} text={ago(other.mtime)} /></a></li>)}</ul></section>}
   {headings.length > 0 && <nav class="lectern-toc" aria-label="Contents"><h2>Contents</h2><ol>{headings.map((h) => <li class={`h${h.level}`}><a href={`#${h.id}`}>{h.text}</a></li>)}</ol></nav>}
 </aside>
