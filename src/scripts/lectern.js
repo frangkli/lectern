@@ -1,5 +1,5 @@
-// Lectern's behaviour: "/" to search, branch pickers, unread marks, copy link, and on a document the
-// rail, its scroll spy, live reload, and code and table controls.
+// Lectern's behaviour: "/" to search, branch pickers, unread marks, Mark as read, copy link, and on a
+// document the rail, its scroll spy, live reload, and code and table controls.
 {
   const bar = document.querySelector(".lectern-bar");
   addEventListener("keydown", (event) => {
@@ -32,13 +32,29 @@
   let since = read("lectern:since", 0);
   if (!since) write("lectern:since", (since = Date.now()));
   const seen = read("lectern:seen", {});
-  // A page prerendered on hover counts as read only once it is shown. The server keeps a copy of what
-  // you read, for "changes since your last read".
-  const markRead = () => {
-    write("lectern:seen", { ...read("lectern:seen", {}), [bar.dataset.doc]: Number(bar.dataset.mtime) });
-    navigator.sendBeacon("/read?doc=" + encodeURIComponent(bar.dataset.doc));
-  };
-  if (bar.dataset.doc) document.prerendering ? document.addEventListener("prerenderingchange", markRead, { once: true }) : markRead();
+  // A document counts as read only when you mark it, so a glance at a draft an agent is still writing
+  // doesn't move "changes since your last read". The server keeps a copy of the version on the page, and
+  // refuses once the file has changed since; the page then reloads to show the new version. One mark at a
+  // time, across the page's buttons, so a double click sends one request.
+  let marking = false;
+  for (const button of document.querySelectorAll("[data-read]")) {
+    const text = button.textContent;
+    button.addEventListener("click", async () => {
+      if (marking) return;
+      marking = true;
+      const response = await fetch(`/read?doc=${encodeURIComponent(bar.dataset.doc)}&version=${button.dataset.read}`, { method: "POST" }).catch(() => undefined);
+      if (response?.ok) write("lectern:seen", { ...read("lectern:seen", {}), [bar.dataset.doc]: Number(button.dataset.read) });
+      // Marked from the changes, go back to the document; otherwise reload, to show it as read.
+      if (response?.ok && new URLSearchParams(location.search).has("diff")) return location.assign(location.pathname);
+      if (response?.ok || response?.status === 409) return location.reload();
+      marking = false;
+      button.textContent = "Mark failed";
+      setTimeout(() => (button.textContent = text), 1600);
+    });
+  }
+  // A version already marked, in another browser or before a save of the same text, clears its flags here too.
+  const marked = document.querySelector("[data-marked]");
+  if (marked) write("lectern:seen", Object.assign(seen, { [bar.dataset.doc]: Number(marked.dataset.marked) }));
   for (const link of document.querySelectorAll("[data-doc]:not(.lectern-bar)")) {
     const mtime = Number(link.dataset.mtime);
     if (mtime <= since || (seen[link.dataset.doc] ?? 0) >= mtime) continue;

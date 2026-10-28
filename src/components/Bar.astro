@@ -4,13 +4,13 @@ import SearchField from "./SearchField.astro";
 
 interface Props {
   crumbs: [string, string?][];
-  doc?: { url: string; mtime: number };
+  doc?: { url: string };
   home: boolean;
   query: string;
 }
 const { crumbs, doc, home, query } = Astro.props;
 ---
-<div class="lectern-bar" role="banner" data-doc={doc?.url} data-mtime={doc && Math.round(doc.mtime)}>
+<div class="lectern-bar" role="banner" data-doc={doc?.url}>
   <a class="lectern-mark" href="/"><img src="/icon-192.png" alt="" width="28" height="28" />Lectern</a>
   {crumbs.length ? (
     <nav class="lectern-crumbs" aria-label="Breadcrumb"><ol>{crumbs.map(([text, url], i) => (i < crumbs.length - 1 && url ? <li><a href={url}>{text}</a></li> : <li><span aria-current="page">{text}</span></li>))}</ol></nav>

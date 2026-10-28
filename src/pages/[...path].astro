@@ -10,7 +10,7 @@ import { diffHtml } from "../lib/diff";
 import { citedRepos, documentHtml, escapeHtml, linkSources } from "../lib/document";
 import { ago, drafts, kindName, kindsIn, plural, stamp } from "../lib/format";
 import { type Doc, docRoots, docUrl, encodePath, library, localRoot, resolveFile, route, trackedFiles, type Worktree } from "../lib/library";
-import { lastRead } from "../lib/reads";
+import { lastRead, markedAt, versionOf } from "../lib/reads";
 import { types } from "../lib/types";
 
 const pathname = decodeURIComponent(Astro.url.pathname);
@@ -40,12 +40,15 @@ const found = doc && (await resolveFile(shown!, path!));
 if (page.missing || !repo || !main || !shown || (doc && !found)) return Astro.rewrite("/404");
 
 const crumbs: [string, string?][] = repo.notes ? [["Notes", shown.url]] : [[repo.name, main.url], [shown.local ? "local" : shown.key, shown.url]];
+// The version shown, stamped before it is read, so Mark as read refuses once the file has changed since.
+const version = found && (await versionOf(found.file));
 const rendered = found && (await documentHtml(found.file));
 // ?diff= shows the document with its changes marked since an earlier version: ?diff=read for the one you
 // last read, or ?diff=<branch> for that branch's copy. Without one, a line says when it changed since you read it.
-const read = found && (await lastRead(found.file));
+const [read, marked] = found ? await Promise.all([lastRead(found.file), markedAt(found.file)]) : [];
 const against = Astro.url.searchParams.get("diff");
 let banner = "";
+const markButton = `<button class="lectern-button" type="button" data-read="${version}">Mark as read</button>`;
 const readAt = read && `<span class="lectern-note" title="${stamp(read.mtime)}">${ago(read.mtime).replace(/^(Just|Yesterday)/, (word) => word.toLowerCase())}</span>`;
 if (rendered && against !== null) {
   const other = docs.find((d) => d.repo === repo.name && d.path === path && d !== doc && d.worktree.key === against);
@@ -55,9 +58,9 @@ if (rendered && against !== null) {
   if (before === undefined || after === undefined) return Astro.redirect(docUrl(doc!), 302);
   rendered.html = rendered.html.replace(content, (_, open, __, close) => open + diffHtml(before, after) + close);
   const label = read && against === "read" ? `${before === after ? "No changes" : "Changes"} since your last read,${readAt}` : `${before === after ? "No changes" : "Changes"} against ${escapeHtml(against)}`;
-  banner = `<p class="lectern-diffbar"><span>${label}</span><span class="lectern-key"><ins class="lectern-ins">Added</ins> <del class="lectern-del">Removed</del></span>${before === after ? "" : '<span class="lectern-step"><button class="lectern-button" type="button" data-step="-1">Previous</button><button class="lectern-button" type="button" data-step="1">Next</button></span>'}<a href="${docUrl(doc!)}">Show document</a></p>`;
+  banner = `<p class="lectern-diffbar"><span>${label}</span><span class="lectern-key"><ins class="lectern-ins">Added</ins> <del class="lectern-del">Removed</del></span>${before === after ? "" : '<span class="lectern-step"><button class="lectern-button" type="button" data-step="-1">Previous</button><button class="lectern-button" type="button" data-step="1">Next</button></span>'}${against === "read" && read?.unread ? markButton : ""}<a href="${docUrl(doc!)}">Show document</a></p>`;
 } else if (read?.unread) {
-  banner = `<p class="lectern-diffbar"><span>Updated since your last read,${readAt}</span><a href="?diff=read">Show changes</a></p>`;
+  banner = `<p class="lectern-diffbar"><span>Updated since your last read,${readAt}</span>${markButton}<a href="?diff=read">Show changes</a></p>`;
 }
 // Code citing a file in the repo, like `src/a.ts:42`, links to Lectern's view of it, or to the document
 // when it cites one. A local doc cites the main checkout. After the diff, so links don't count as changes.
@@ -85,7 +88,7 @@ const keys = byFolder ? [...groups.keys()].toSorted() : kindsIn(list);
 const listGroups = keys.map((key) => ({ label: byFolder ? (key ? `${key}/` : "Top level") : kindName(key, true), rows: groups.get(key)!.map((d: Doc) => ({ doc: d })) }));
 ---
 {rendered ? (
-  <DocLayout html={rendered.html} headings={rendered.headings} banner={banner} read={read || undefined} against={against} doc={doc!} docs={docs} crumbs={[...crumbs, [doc!.title]]} current={repo} />
+  <DocLayout html={rendered.html} headings={rendered.headings} banner={banner} read={read || undefined} marked={marked} version={version || 0} against={against} doc={doc!} docs={docs} crumbs={[...crumbs, [doc!.title]]} current={repo} />
 ) : (
   <IndexLayout title={repo.notes ? "Notes" : `${repo.name} · ${shown.label}`} crumbs={crumbs} current={repo}>
     <header class="lectern-head" slot="head">
