@@ -151,10 +151,13 @@
           return `#${[r, g, b].map((n) => n.toString(16).padStart(2, "0")).join("")}`;
         };
         const soft = (name, share) => color(`color-mix(in oklab, var(${name}) ${share}%, var(--surface))`);
-        const layout = { curve: "basis", wrappingWidth: 130, minNodeWidth: 0, padding: 10, nodeSpacing: 22, rankSpacing: 32, diagramPadding: 4 };
+        const layout = { curve: "basis", wrappingWidth: 130, minNodeWidth: 0, padding: 12, nodeSpacing: 22, rankSpacing: 30, diagramPadding: 4 };
         let narrow;
+        // Wide screens draw a state diagram left to right unless it sets a direction; phones draw everything top to bottom.
         const source = (i) =>
-          narrow ? sources[i].replace(/^(\s*(?:flowchart|graph)\s+)LR\b/m, "$1TB").replace(/^(\s*direction\s+)LR\b/gm, "$1TB") : sources[i];
+          narrow
+            ? sources[i].replace(/^(\s*(?:flowchart|graph)\s+)LR\b/m, "$1TB").replace(/^(\s*direction\s+)LR\b/gm, "$1TB")
+            : /^\s*direction\s/m.test(sources[i]) ? sources[i] : sources[i].replace(/^(\s*stateDiagram(?:-v2)?[^\n]*)$/m, "$1\n  direction LR");
         const fit = () => {
           if (narrow !== undefined && narrow !== innerWidth < 600) return render();
           for (const block of blocks) {
@@ -178,18 +181,19 @@
           const background = color("--bg");
           const [red, green, blue] = [1, 3, 5].map((at) => Number.parseInt(background.slice(at, at + 2), 16));
           const [text, muted, surface, sunken, border, soft2] = ["--text", "--muted", "--surface", "--sunken", "--border", "--border-soft"].map(color);
-          // Node outlines sit a step darker than the page's hairlines, so shapes hold their edge.
-          const line = soft("--ink", 30);
+          // Nodes are grey blocks like the kit's other panels; arrows sit a step lighter than the text.
+          const line = soft("--ink", 16);
+          const arrow = soft("--ink", 45);
           const palette = [1, 2, 3, 4, 5, 6].map((n) => color(`--cat-${n}`));
           const tints = [1, 2, 3, 4, 5, 6].map((n) => soft(`--cat-${n}`, 22));
           const fontFamily = getComputedStyle(document.body).fontFamily;
           const themeVariables = {
             darkMode: red * 0.299 + green * 0.587 + blue * 0.114 < 128,
             background, fontFamily, fontSize: "14px", radius: 8, strokeWidth: 1, dropShadow: "none",
-            primaryColor: surface, mainBkg: surface, nodeBkg: surface, primaryBorderColor: line, nodeBorder: line,
+            primaryColor: sunken, mainBkg: sunken, nodeBkg: sunken, primaryBorderColor: line, nodeBorder: line,
             primaryTextColor: text, nodeTextColor: text, textColor: text, titleColor: muted,
-            secondaryColor: sunken, tertiaryColor: sunken, clusterBkg: "transparent", clusterBorder: border,
-            lineColor: muted, arrowheadColor: muted, edgeLabelBackground: background,
+            secondaryColor: sunken, tertiaryColor: sunken, clusterBkg: soft("--ink", 2), clusterBorder: border,
+            lineColor: arrow, arrowheadColor: arrow, edgeLabelBackground: background,
             noteBkgColor: soft("--warn", 10), noteBorderColor: color("--warn"), noteTextColor: text,
             errorBkgColor: soft("--bad", 10), errorTextColor: color("--bad"),
             // Sequence diagrams.
@@ -227,15 +231,20 @@
             },
           };
           const natural = { useMaxWidth: false, theme: "base", look: "classic" };
-          const axis = { labelFontSize: 12.5, titleFontSize: 13.5 };
+          const axis = { labelFontSize: 13, titleFontSize: 13 };
           return {
             startOnLoad: false, theme: "base", look: "classic", layout: "dagre", themeVariables,
-            themeCSS: ".edgeLabel .labelBkg { max-width: 96px !important; white-space: normal !important; line-height: 1.35 !important; }",
+            themeCSS: [
+              ".edgeLabel .labelBkg { max-width: 96px !important; white-space: normal !important; line-height: 1.35 !important; }",
+              ".node :is(rect, polygon, path), rect.actor { rx: 6px; ry: 6px; } .cluster rect { rx: 8px; ry: 8px; }",
+              ".nodeLabel { font-weight: 500; } .cluster-label .nodeLabel { font-weight: 600; font-size: 13px; color: " + muted + " !important; }",
+              ".flowchart-link { stroke-width: 1.25px; }",
+            ].join(" "),
             flowchart: { ...natural, ...layout }, state: { ...natural, ...layout },
-            sequence: { ...natural, actorFontSize: 13.5, messageFontSize: 13.5, noteFontSize: 13.5, actorMargin: 40, boxMargin: 8, mirrorActors: false },
-            class: natural, er: { ...natural, fontSize: 13.5 }, timeline: natural, pie: natural, quadrantChart: natural, journey: natural, mindmap: natural,
-            gantt: { ...natural, useWidth: Math.max(width, 560), fontSize: 12.5, sectionFontSize: 13, barHeight: 22, barGap: 6, topPadding: 44, leftPadding: 120 },
-            xyChart: { ...natural, width: Math.min(Math.max(width, 480), 720), height: 240, titleFontSize: 14, legendFontSize: 12.5, xAxis: axis, yAxis: axis },
+            sequence: { ...natural, actorFontSize: 14, messageFontSize: 14, noteFontSize: 14, actorMargin: 40, boxMargin: 8, mirrorActors: false },
+            class: natural, er: { ...natural, fontSize: 14 }, timeline: natural, pie: natural, quadrantChart: natural, journey: natural, mindmap: natural,
+            gantt: { ...natural, useWidth: Math.max(width, 560), fontSize: 13, sectionFontSize: 13, barHeight: 22, barGap: 6, topPadding: 44, leftPadding: 120 },
+            xyChart: { ...natural, width: Math.min(Math.max(width, 480), 720), height: 240, titleFontSize: 14, legendFontSize: 13, xAxis: axis, yAxis: axis },
             sankey: { ...natural, width: Math.min(Math.max(width, 480), 880), height: 360, linkColor: "source", nodeColors: sankeyColors(palette) },
           };
         };

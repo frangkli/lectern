@@ -189,9 +189,9 @@ describe("diffHtml", () => {
 test("linkSources links code citing a tracked file, and leaves the rest alone", () => {
   const files = new Set(["src/lib/a.ts", "src/b.ts", "test/b.ts", "README.md"]);
   const html = linkSources(markdown("`src/lib/a.ts:42`, `a.ts:4-6`, `src/b.ts`, `b.ts:1`, `README.md`, `x.ts:1`\n\n```\nsrc/b.ts\n```\n"), { files, href: (path, lines) => `/source/app/main/${path}${lines}` });
-  expect(html).toContain('<a class="lectern-src" href="/source/app/main/src/lib/a.ts#L42"><code>src/lib/a.ts:42</code></a>');
-  expect(html).toContain('href="/source/app/main/src/lib/a.ts#L4-L6"><code>a.ts:4-6</code>');
-  expect(html).toContain('href="/source/app/main/src/b.ts"><code>src/b.ts</code>');
+  expect(html).toContain('<a class="lectern-src" href="/source/app/main/src/lib/a.ts#L42" title="src/lib/a.ts:42"><code>a.ts:42</code></a>');
+  expect(html).toContain('href="/source/app/main/src/lib/a.ts#L4-L6" title="a.ts:4-6"><code>a.ts:4-6</code>');
+  expect(html).toContain('href="/source/app/main/src/b.ts" title="src/b.ts"><code>b.ts</code>');
   // Ambiguous, a bare name without a line, unknown, and code blocks stay as written.
   for (const text of ["<code>b.ts:1</code>", "<code>README.md</code>", "<code>x.ts:1</code>", "<pre><code>src/b.ts"]) expect(html).toContain(text);
   expect(html.match(/lectern-src/g)).toHaveLength(3);
@@ -209,8 +209,8 @@ test("linkSources resolves a repo:path citation in the named repo, from any docu
   const html = markdown("`lib:src/lib/a.ts:42`, `lib:a.ts:4-6`, `lib:src/c.ts`, `other:src/b.ts`, `localhost:8080`, `a.ts:1`\n");
   expect([...citedRepos(html)]).toEqual(["lib", "other", "localhost", "a.ts"]);
   const linked = linkSources(html, undefined, new Map([["lib", lib]]));
-  expect(linked).toContain('href="/source/lib/main/src/lib/a.ts#L42"><code>lib:src/lib/a.ts:42</code>');
-  expect(linked).toContain('href="/source/lib/main/src/lib/a.ts#L4-L6"><code>lib:a.ts:4-6</code>');
+  expect(linked).toContain('href="/source/lib/main/src/lib/a.ts#L42" title="lib:src/lib/a.ts:42"><code>a.ts:42</code>');
+  expect(linked).toContain('href="/source/lib/main/src/lib/a.ts#L4-L6" title="lib:a.ts:4-6"><code>a.ts:4-6</code>');
   // An unknown file, an unknown repo, a host and port, and a bare citation without a repo of its own stay as written.
   expect(linked.match(/lectern-src/g)).toHaveLength(2);
 });
