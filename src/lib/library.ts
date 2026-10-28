@@ -223,6 +223,10 @@ export function unique(docs: Doc[]) {
   return [...merged.values(), ...docs.filter((doc) => !doc.merged)];
 }
 
+// The worktree a "<branch>/<path>" tail names; branch names may contain slashes, so the longest match wins.
+const worktreeIn = (repo: Repo, tail: string) =>
+  repo.worktrees.toSorted((a, b) => b.key.length - a.key.length).find((candidate) => tail === candidate.key || tail.startsWith(`${candidate.key}/`));
+
 // Pages are /<repo>/<branch>/<path> and raw files /raw/<repo>/<branch>/<path>; branch names may
 // contain slashes. A link into a removed worktree matches no worktree but keeps its path. Local docs
 // and notes are a path under /<repo>/~local or /~notes, subfolders included.
@@ -235,9 +239,7 @@ export function route(pathname: string, repos: Map<string, Repo>) {
     return { repo, worktree: repo?.local, path: valid ? file : undefined, extra: file !== "" };
   }
   const tail = rest.join("/");
-  const worktree = repo?.worktrees
-    .toSorted((a, b) => b.key.length - a.key.length)
-    .find((candidate) => tail === candidate.key || tail.startsWith(`${candidate.key}/`));
+  const worktree = repo && worktreeIn(repo, tail);
   const path = worktree ? tail.slice(worktree.key.length + 1) : docPathIn.exec(tail)?.[1];
   const valid = isDocPath(path ?? "") && posix.normalize(path!) === path && !path!.includes("\0");
   return { repo, worktree, path: valid ? path : undefined, extra: tail !== (worktree?.key ?? "") };
@@ -267,4 +269,28 @@ export async function fileFor(pathname: string) {
     if (found) return found;
   }
   return undefined;
+}
+
+// Every file git tracks in a worktree, for source links. Untracked files (.env and the like) never show.
+const tracked = new Map<string, { at: number; files: Promise<Set<string>> }>();
+export function trackedFiles(dir: string) {
+  const cached = tracked.get(dir);
+  if (cached && Date.now() - cached.at < 30_000) return cached.files;
+  const files = git(dir, "ls-files", "-z").then((output) => new Set(output.split("\0").filter(Boolean)), () => new Set<string>());
+  tracked.set(dir, { at: Date.now(), files });
+  return files;
+}
+
+// A tracked file from a /source/<repo>/<branch>/<path> URL: read-only, and only a regular file whose
+// real path stays inside its worktree.
+export async function sourceFile(pathname: string) {
+  const [, name, ...rest] = pathname.split("/");
+  const repo = (await library()).repos.get(name);
+  const tail = rest.join("/");
+  const worktree = repo && !repo.notes ? worktreeIn(repo, tail) : undefined;
+  const path = worktree && tail.slice(worktree.key.length + 1);
+  if (!worktree || !path || !(await trackedFiles(worktree.dir)).has(path)) return undefined;
+  const [root, file] = await Promise.all([realpath(worktree.dir), realpath(join(worktree.dir, path))]).catch(() => []);
+  if (!file?.startsWith(root + sep) || !(await stat(file)).isFile()) return undefined;
+  return { repo: repo!, worktree, path, file };
 }

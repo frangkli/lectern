@@ -204,6 +204,14 @@ ins.lectern-ins { color: inherit; text-decoration: underline var(--good); text-u
 li.lectern-del { counter-increment: list-item 0; }
 li.lectern-del::marker { content: ""; }
 .lectern-code { margin: 20px 0; }
+/* A source view (pages/source): numbered lines, and the cited ones marked. Links to it look like code. */
+.lectern-source pre { margin: 24px 0 0; counter-reset: line; }
+.lectern-source .line::before { counter-increment: line; content: counter(line); display: inline-block; width: 4ch; margin-right: 16px; text-align: right; color: var(--muted); }
+.lectern-source .line { display: inline-block; width: calc(100% + 72px); margin: 0 -56px 0 -16px; padding: 0 56px 0 16px; scroll-margin: 96px; }
+.lectern-source .line.lectern-marked { background: light-dark(#fff8c5, rgb(187 128 9 / 0.15)); }
+a.lectern-src { text-decoration: none; }
+a.lectern-src code { text-decoration: underline; text-decoration-color: var(--muted); text-underline-offset: 3px; }
+a.lectern-src:hover code { text-decoration-color: currentColor; }
 .lectern-code figcaption { max-width: none; margin: 0; padding: 8px 16px; font: 12.5px/1.4 var(--mono); color: var(--text-2); background: light-dark(#fafafa, #0a0a0a); border: 1px solid var(--border-soft); border-bottom: 0; border-radius: var(--radius) var(--radius) 0 0; }
 .lectern-code pre { margin: 0; border-radius: 0 0 var(--radius) var(--radius); }
 .lectern-wrapped code { white-space: pre-wrap; overflow-wrap: anywhere; }
