@@ -42,19 +42,25 @@
   for (const link of document.querySelectorAll("[data-doc]:not(.lectern-bar)")) {
     const mtime = Number(link.dataset.mtime);
     if (mtime <= since || (seen[link.dataset.doc] ?? 0) >= mtime) continue;
-    link.insertAdjacentHTML("afterend", '<span class="lectern-flag unread">' + (link.dataset.doc in seen ? "Updated" : "New") + "</span>");
+    // "Updated" links to the changes since you read it.
+    link.insertAdjacentHTML("afterend", link.dataset.doc in seen ? '<a class="lectern-flag unread" href="' + link.href + '?diff=read">Updated</a>' : '<span class="lectern-flag unread">New</span>');
   }
 
+  // Copy link copies the page's address; a data-copy URL copies what it serves, a Markdown document's
+  // source. That goes in as a promise so Safari still counts the click once the fetch is done.
   for (const button of document.querySelectorAll("[data-copy]")) {
     const label = button.querySelector("span");
+    const text = label.textContent;
+    const source = button.dataset.copy;
+    const fetched = () => fetch(source).then((response) => (response.ok ? response.text() : Promise.reject())).then((body) => new Blob([body], { type: "text/plain" }));
     button.addEventListener("click", async () => {
       try {
-        await navigator.clipboard.writeText(location.href);
+        await (source ? navigator.clipboard.write([new ClipboardItem({ "text/plain": fetched() })]) : navigator.clipboard.writeText(location.href));
         label.textContent = "Copied";
       } catch {
         label.textContent = "Copy failed";
       }
-      setTimeout(() => (label.textContent = "Copy link"), 1600);
+      setTimeout(() => (label.textContent = text), 1600);
     });
   }
 
@@ -93,8 +99,22 @@
     new EventSource("/events?doc=" + encodeURIComponent(bar.dataset.doc)).onmessage = () => location.reload();
   }
 
+  // A page showing changes (?diff=): Previous and Next scroll to the change above or below the middle of
+  // the window. Changes that touch, like a word's removed and added parts or a run of changed lines, count once.
+  for (const button of document.querySelectorAll("[data-step]")) {
+    button.addEventListener("click", () => {
+      // The middle of the window below the scroll padding, where scrollIntoView centres a change.
+      const middle = (innerHeight + (parseFloat(getComputedStyle(document.documentElement).scrollPaddingTop) || 0)) / 2;
+      const boxes = [...document.querySelectorAll("main :is(.lectern-ins, .lectern-del, .line.diff):not(.lectern-key *)")].filter((change) => change.getClientRects().length).map((change) => [change, change.getBoundingClientRect()]);
+      const changes = boxes.filter(([, box], i) => !i || box.top > boxes[i - 1][1].bottom + 1);
+      const [next] = (button.dataset.step === "1" ? changes.find(([, box]) => box.top > middle + 1) : changes.findLast(([, box]) => box.bottom < middle - 1)) ?? [];
+      next?.scrollIntoView({ block: "center", behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
+    });
+  }
+
   // Code, after the kit has put each block in a .code box with its copy button: blocks wider than the
-  // column get a wrap toggle, and blocks over 25 lines fold to 20 until opened.
+  // column get a wrap toggle, and blocks over 25 lines fold to 20 until opened, except where a fold
+  // could hide changes (?diff=).
   // A source view (pages/source) marks the lines its #L40-L52 hash names and scrolls to them; it never folds.
   const source = document.querySelector(".lectern-source");
   if (source) {
@@ -118,7 +138,7 @@
       box.append(wrap);
     }
     const lines = pre.querySelectorAll(".line").length;
-    if (lines > 25) {
+    if (lines > 25 && !new URLSearchParams(location.search).has("diff")) {
       box.classList.add("lectern-folded");
       const more = Object.assign(document.createElement("button"), { type: "button", className: "lectern-button lectern-unfold", textContent: `Show all ${lines} lines` });
       more.addEventListener("click", () => {

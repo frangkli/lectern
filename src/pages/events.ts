@@ -4,7 +4,7 @@ import type { APIRoute } from "astro";
 import { fileFor } from "../lib/library";
 
 export const GET: APIRoute = async ({ url, request }) => {
-  const found = await fileFor(url.searchParams.get("doc") ?? "");
+  const found = await fileFor(decodeURIComponent(url.searchParams.get("doc") ?? ""));
   if (!found) return new Response("Not found", { status: 404 });
   const mtime = () => stat(found.file).then((info) => info.mtimeMs, () => 0);
   let last = await mtime();
