@@ -6,9 +6,11 @@ import BranchMenu from "../components/BranchMenu.astro";
 import DocList from "../components/DocList.astro";
 import DocLayout from "../layouts/DocLayout.astro";
 import IndexLayout from "../layouts/IndexLayout.astro";
-import { documentHtml } from "../lib/document";
-import { drafts, kindName, kindsIn, plural } from "../lib/format";
+import { diffHtml } from "../lib/diff";
+import { documentHtml, escapeHtml } from "../lib/document";
+import { ago, drafts, kindName, kindsIn, plural, stamp } from "../lib/format";
 import { type Doc, docRoots, docUrl, library, resolveFile, route } from "../lib/library";
+import { lastRead } from "../lib/reads";
 import { types } from "../lib/types";
 
 const pathname = decodeURIComponent(Astro.url.pathname);
@@ -39,6 +41,24 @@ if (page.missing || !repo || !main || !shown || (doc && !found)) return Astro.re
 
 const crumbs: [string, string?][] = repo.notes ? [["Notes", shown.url]] : [[repo.name, main.url], [shown.local ? "local" : shown.key, shown.url]];
 const rendered = found && (await documentHtml(found.file));
+// ?diff= shows the document with its changes marked since an earlier version: ?diff=read for the one you
+// last read, or ?diff=<branch> for that branch's copy. Without one, a line says when it changed since you read it.
+const read = found && (await lastRead(found.file));
+const against = Astro.url.searchParams.get("diff");
+let banner = "";
+const readAt = read && `<span class="lectern-note" title="${stamp(read.mtime)}">${ago(read.mtime).replace(/^(Just|Yesterday)/, (word) => word.toLowerCase())}</span>`;
+if (rendered && against !== null) {
+  const other = docs.find((d) => d.repo === repo.name && d.path === path && d !== doc && d.worktree.key === against);
+  const base = against === "read" ? read?.file : other && (await resolveFile(other.worktree, path!))?.file;
+  const content = /(<main\b[^>]*>)([\s\S]*)(<\/main>)/i;
+  const [before, after] = [base && content.exec((await documentHtml(base)).html)?.[2], content.exec(rendered.html)?.[2]];
+  if (before === undefined || after === undefined) return Astro.redirect(docUrl(doc!), 302);
+  rendered.html = rendered.html.replace(content, (_, open, __, close) => open + diffHtml(before, after) + close);
+  const label = read && against === "read" ? `${before === after ? "No changes" : "Changes"} since your last read,${readAt}` : `${before === after ? "No changes" : "Changes"} against ${escapeHtml(against)}`;
+  banner = `<p class="lectern-diffbar"><span>${label}</span><span class="lectern-key"><ins class="lectern-ins">Added</ins> <del class="lectern-del">Removed</del></span><a href="${docUrl(doc!)}">Show document</a></p>`;
+} else if (read?.unread) {
+  banner = `<p class="lectern-diffbar"><span>Updated since your last read,${readAt}</span><a href="?diff=read">Show changes</a></p>`;
+}
 // The docs a worktree's view lists: its own, plus the repo's local docs in the main checkout's view.
 const list = (shown.local ? docs.filter((d) => d.worktree === shown) : docs.filter((d) => d.worktree === shown || (shown.main && d.worktree === repo.local))).toSorted((a, b) => b.mtime - a.mtime);
 const count = drafts(list);
@@ -50,7 +70,7 @@ const keys = byFolder ? [...groups.keys()].toSorted() : kindsIn(list);
 const listGroups = keys.map((key) => ({ label: byFolder ? (key ? `${key}/` : "Top level") : kindName(key, true), rows: groups.get(key)!.map((d: Doc) => ({ doc: d })) }));
 ---
 {rendered ? (
-  <DocLayout html={rendered.html} headings={rendered.headings} doc={doc!} docs={docs} crumbs={[...crumbs, [doc!.title]]} current={repo} />
+  <DocLayout html={rendered.html} headings={rendered.headings} banner={banner} read={read || undefined} against={against} doc={doc!} docs={docs} crumbs={[...crumbs, [doc!.title]]} current={repo} />
 ) : (
   <IndexLayout title={repo.notes ? "Notes" : `${repo.name} · ${shown.label}`} crumbs={crumbs} current={repo}>
     <header class="lectern-head" slot="head">

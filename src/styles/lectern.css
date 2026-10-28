@@ -3,7 +3,7 @@
    documents are plain lists: no rules, no boxes, space between entries. Controls are square-cornered
    (6px at most). Colour appears only where it means something: ochre for drafts, blue for new and
    updated, green for merged. */
-:root { --row-x: 16px; --bar: 64px; --nav: 232px; --toc: 200px; --toc-gap: 32px; --control: 6px; }
+:root { --ins: light-dark(#dafbe1, rgb(46 160 67 / 0.15)); --del: light-dark(#ffebe9, rgb(248 81 73 / 0.15)); --row-x: 16px; --bar: 64px; --nav: 232px; --toc: 200px; --toc-gap: 32px; --control: 6px; }
 /* The kit names its faces; Lectern serves its own copies, which Astro renames, so point the kit at them. */
 :root { --font: var(--font-hanken), ui-sans-serif, system-ui, sans-serif; --mono: var(--font-geist-mono), ui-monospace, monospace; }
 [data-lectern] { scroll-padding-top: calc(var(--bar) + 24px); }
@@ -177,6 +177,7 @@
 .lectern-state.merged { color: var(--good); }
 .lectern-versions a { display: flex; justify-content: space-between; gap: 12px; padding: 3px 0; font-size: 13px; color: var(--ink); text-decoration: none; }
 .lectern-versions a:hover span { text-decoration: underline; }
+.lectern-versions a[aria-current] span { font-weight: 600; }
 .lectern-versions time { flex: none; font-size: 12px; color: var(--muted); }
 
 /* Inside a document. Code is highlighted on the server by Shiki (lib/code.ts) in GitHub's light and
@@ -184,8 +185,24 @@
 .shiki span { color: light-dark(var(--shiki-light), var(--shiki-dark)); }
 .shiki :is(.highlighted, .diff) { display: inline-block; width: calc(100% + 72px); margin: 0 -56px 0 -16px; padding: 0 56px 0 16px; }
 .shiki .highlighted { background: light-dark(#fff8c5, rgb(187 128 9 / 0.15)); }
-.shiki .diff.add { background: light-dark(#dafbe1, rgb(46 160 67 / 0.15)); box-shadow: inset 2px 0 var(--good); }
-.shiki .diff.remove { background: light-dark(#ffebe9, rgb(248 81 73 / 0.15)); box-shadow: inset 2px 0 var(--bad); }
+.shiki .diff.add { background: var(--ins); box-shadow: inset 2px 0 var(--good); }
+.shiki .diff.remove { background: var(--del); box-shadow: inset 2px 0 var(--bad); }
+/* Changes (lib/diff.ts): the line above a document about them, and the marks in a compared document. A
+   block marked whole gets its tint a little past its edges, without moving anything. */
+.lectern-diffbar { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 16px; max-width: none; margin: 0 0 32px; padding: 10px 14px; font-size: 14px; line-height: 20px; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; }
+.lectern-diffbar > span:first-child { flex: 1; font-weight: 500; }
+.lectern-diffbar .lectern-note { margin-left: 4px; font-size: inherit; font-weight: 400; }
+.lectern-key { display: flex; gap: 8px; font-size: 12.5px; }
+.lectern-ins { background: var(--ins); }
+.lectern-del { color: var(--muted); text-decoration: line-through var(--bad); background: var(--del); }
+/* In place of the kit's +/− signs (too busy between words), added words are underlined and removed ones struck. */
+:is(ins, del):is(.lectern-ins, .lectern-del)::before { content: none; }
+ins.lectern-ins { color: inherit; text-decoration: underline var(--good); text-underline-offset: 3px; }
+:not(ins, del):is(.lectern-ins, .lectern-del) { border-radius: 2px; box-shadow: 0 0 0 4px var(--ins); }
+:not(ins, del).lectern-del { box-shadow: 0 0 0 4px var(--del); }
+/* A removed list item keeps no number, so the others keep the current version's numbers. */
+li.lectern-del { counter-increment: list-item 0; }
+li.lectern-del::marker { content: ""; }
 .lectern-code { margin: 20px 0; }
 .lectern-code figcaption { max-width: none; margin: 0; padding: 8px 16px; font: 12.5px/1.4 var(--mono); color: var(--text-2); background: light-dark(#fafafa, #0a0a0a); border: 1px solid var(--border-soft); border-bottom: 0; border-radius: var(--radius) var(--radius) 0 0; }
 .lectern-code pre { margin: 0; border-radius: 0 0 var(--radius) var(--radius); }

@@ -1,6 +1,7 @@
 ---
 // A document served as itself: its own page, with Lectern's bar, library and rail added around its
-// content. Markdown documents also get a line naming their kind and date above the title.
+// content. Markdown documents also get a line naming their kind and date above the title, and any
+// document can get a banner (the page's line about changes) at the top of its content.
 import Chrome from "../components/Chrome.astro";
 import Head from "../components/Head.astro";
 import Rail from "../components/Rail.astro";
@@ -17,24 +18,28 @@ interface Props {
   docs: Doc[];
   crumbs: [string, string?][];
   current: unknown;
+  banner: string;
+  read?: { mtime: number };
+  against: string | null;
 }
-const { html, headings, doc, docs, crumbs, current } = Astro.props;
+const { html, headings, doc, docs, crumbs, current, banner, read, against } = Astro.props;
 const attributes = (text = "") => Object.fromEntries([...text.matchAll(/([^\s=]+)(?:="([^"]*)")?/g)].map(([, name, value]) => [name, value ?? ""]));
 const date = new Date(doc.mtime);
 const eyebrow = `${kindName(doc.kind)} · ${months[date.getMonth()].slice(0, 3)} ${date.getDate()}, ${date.getFullYear()}`;
 const page = doc.path.endsWith(".md") ? html.replace(/(<main>)(<h1>[\s\S]*?<\/h1>)/, (_, main, title) => `${main}<header><p class="eyebrow">${escapeHtml(eyebrow)}</p>${title}</header>`) : html;
+const shown = page.replace(/<main\b[^>]*>/i, (open) => open + banner);
 const htmlAttributes = attributes(/<html\b([^>]*)>/i.exec(page)?.[1]);
 const head = /<head\b[^>]*>([\s\S]*?)<\/head>/i.exec(page)?.[1] ?? "";
-const bodyMatch = /<body\b([^>]*)>([\s\S]*)<\/body>/i.exec(page);
+const bodyMatch = /<body\b([^>]*)>([\s\S]*)<\/body>/i.exec(shown);
 const bodyAttributes = attributes(bodyMatch?.[1]);
-const body = bodyMatch?.[2] ?? page;
+const body = bodyMatch?.[2] ?? shown;
 ---
 <!doctype html>
 <html {...htmlAttributes} data-lectern="doc">
   <head><Fragment set:html={head} /><Head /></head>
   <body {...bodyAttributes}>
     <Chrome crumbs={crumbs} doc={doc} current={current} />
-    <Rail doc={doc} headings={headings} docs={docs} />
+    <Rail doc={doc} headings={headings} docs={docs} read={read} against={against} />
     <span id="lectern-main" tabindex="-1"></span>
     <Fragment set:html={body} />
     <Tail />

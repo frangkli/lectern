@@ -1,5 +1,6 @@
 import { describe, expect, test } from "vitest";
 import { loadLanguages } from "./code";
+import { diffHtml } from "./diff";
 import { markdown, parseDocument, withHeadingIds } from "./document";
 import { ago, marks } from "./format";
 import { type Doc, type Repo, type Worktree, route, unique } from "./library";
@@ -104,4 +105,19 @@ test("ago and marks", () => {
   const now = new Date(2026, 9, 27, 12).getTime();
   expect([ago(now, now), ago(now - 5 * 6e4, now), ago(now - 864e5, now)]).toEqual(["Just now", "5 min ago", "Yesterday"]);
   expect(marks("A cache plan", ["cache"])).toEqual([{ text: "A ", hit: false }, { text: "cache", hit: true }, { text: " plan", hit: false }]);
+});
+
+describe("diffHtml", () => {
+  test("marks changed words inside a block, and new or removed blocks whole, removed first", () => {
+    const html = diffHtml(markdown("The quick brown fox jumps.\n\nGone here.\n"), markdown("A slow brown fox jumps.\n\nBrand new.\n"));
+    expect(html).toBe('<p><del class="lectern-del">The quick</del><ins class="lectern-ins">A slow</ins> brown fox jumps.</p>\n<p class="lectern-del">Gone here.</p>\n<p class="lectern-ins">Brand new.</p>');
+  });
+  test("keeps a table's columns, drops removed headings' ids and marks code by line", async () => {
+    const source = (heading: string, cell: string, line: string) => `${heading}| A | B |\n|---|---|\n| 1 | ${cell} |\n\n\`\`\`ts\nconst a = 1;\n${line}\n\`\`\`\n`;
+    await loadLanguages(source("", "", ""));
+    const html = diffHtml(withHeadingIds(markdown(source("## Old\n\n", "4", "let b;"))).html, markdown(source("", "5", "let c;")));
+    expect(html).toContain('<h2 class="lectern-del">Old</h2>');
+    expect(html).toContain('<td><del class="lectern-del">4</del><ins class="lectern-ins">5</ins></td>');
+    expect(html).toMatch(/class="line diff remove">.*b;[\s\S]*class="line diff add">.*c;/);
+  });
 });
