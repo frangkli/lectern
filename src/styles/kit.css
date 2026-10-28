@@ -159,6 +159,8 @@ tbody th { font-weight: 600; color: var(--ink); }
 :is(.scroll, .table-wrap, table) + p { max-width: none; }
 tr.chosen > * { background: var(--good-soft); }
 tr.chosen > :first-child { padding-left: 10px; color: var(--good); }
+tr.risk > * { background: var(--bad-soft); }
+tr.risk > :first-child { padding-left: 10px; color: var(--bad); }
 
 /* Details: a ruled disclosure. */
 details { margin: 16px 0 20px; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
@@ -219,8 +221,8 @@ h1 :is(.tag, .badge) { vertical-align: 0.3em; }
 .arch { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin: 20px 0; }
 .box { min-width: 0; padding: 16px 18px; font-size: 14px; line-height: 1.6; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; }
 .box.new { background: var(--good-soft); border-color: var(--good-line); }
-.box h3 { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 0 0 6px; font-size: 15px; letter-spacing: -0.01em; }
-.box h3 :is(.tag, .badge) { vertical-align: 0; }
+.box h3 { margin: 0 0 6px; font-size: 15px; letter-spacing: -0.01em; }
+.box h3 :is(.tag, .badge) { margin-left: 6px; vertical-align: 0.12em; }
 .box :is(p, ul, ol) { margin: 0 0 6px; }
 .box li { margin-bottom: 2px; }
 .box > :last-child { margin-bottom: 0; }
