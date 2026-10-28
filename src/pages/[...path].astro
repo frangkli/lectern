@@ -7,9 +7,9 @@ import DocList from "../components/DocList.astro";
 import DocLayout from "../layouts/DocLayout.astro";
 import IndexLayout from "../layouts/IndexLayout.astro";
 import { diffHtml } from "../lib/diff";
-import { documentHtml, escapeHtml, linkSources } from "../lib/document";
+import { citedRepos, documentHtml, escapeHtml, linkSources } from "../lib/document";
 import { ago, drafts, kindName, kindsIn, plural, stamp } from "../lib/format";
-import { type Doc, docRoots, docUrl, encodePath, library, localRoot, resolveFile, route, trackedFiles } from "../lib/library";
+import { type Doc, docRoots, docUrl, encodePath, library, localRoot, resolveFile, route, trackedFiles, type Worktree } from "../lib/library";
 import { lastRead } from "../lib/reads";
 import { types } from "../lib/types";
 
@@ -21,12 +21,12 @@ const resolve = async (fresh: boolean) => {
   const shown = worktree ?? main;
   const doc = shown && path ? lib.docs.find((candidate) => candidate.worktree === shown && candidate.path === path) : undefined;
   const missing = !repo || !main || !shown || (path ? !doc || !worktree : extra);
-  return { docs: lib.docs, repo, worktree, path, main, shown, doc, missing };
+  return { repos: lib.repos, docs: lib.docs, repo, worktree, path, main, shown, doc, missing };
 };
 // A request that finds nothing, like a link to a document saved a moment ago, scans again before it says so.
 let page = await resolve(false);
 if (page.missing) page = await resolve(true);
-const { docs, repo, worktree, path, main, shown, doc } = page;
+const { repos, docs, repo, worktree, path, main, shown, doc } = page;
 
 // A document's images and other files resolve beside it, so its relative links work in Lectern.
 if (worktree && path && !doc && !/\.(md|html)$/.test(path)) {
@@ -61,10 +61,19 @@ if (rendered && against !== null) {
 }
 // Code citing a file in the repo, like `src/a.ts:42`, links to Lectern's view of it, or to the document
 // when it cites one. A local doc cites the main checkout. After the diff, so links don't count as changes.
-// A citation starting ./ or ../ can be relative to the document's folder.
-const sources = rendered && !repo.notes ? (shown.local ? main : shown) : undefined;
-const cited = (file: string, lines: string) => (/\.(md|html)$/.test(file) && docRoots.some((root) => file.startsWith(`${root}/`)) ? `${sources!.url}/${encodePath(file)}` : `/source${sources!.url}/${encodePath(file)}${lines}`);
-if (rendered && sources) rendered.html = linkSources(rendered.html, await trackedFiles(sources.dir), cited, posix.dirname(shown.local ? `${localRoot}/${path}` : path!));
+// A citation starting ./ or ../ can be relative to the document's folder. One prefixed with a repo's name,
+// like `lectern:src/a.ts:42`, cites that repo's main checkout, from any document, notes included.
+const cited = (checkout: Worktree) => (file: string, lines: string) => (/\.(md|html)$/.test(file) && docRoots.some((root) => file.startsWith(`${root}/`)) ? `${checkout.url}/${encodePath(file)}` : `/source${checkout.url}/${encodePath(file)}${lines}`);
+if (rendered) {
+  const sources = repo.notes ? undefined : shown.local ? main : shown;
+  const own = sources && { files: await trackedFiles(sources.dir), href: cited(sources), dir: posix.dirname(shown.local ? `${localRoot}/${path}` : path!) };
+  const others = await Promise.all([...citedRepos(rendered.html)].flatMap((name) => {
+    const other = repos.get(name);
+    const checkout = other && !other.notes && (other.worktrees.find((candidate) => candidate.main) ?? other.worktrees[0]);
+    return checkout ? [trackedFiles(checkout.dir).then((files) => [name, { files, href: cited(checkout) }] as const)] : [];
+  }));
+  rendered.html = linkSources(rendered.html, own, new Map(others));
+}
 // The docs a worktree's view lists: its own, plus the repo's local docs in the main checkout's view.
 const list = (shown.local ? docs.filter((d) => d.worktree === shown) : docs.filter((d) => d.worktree === shown || (shown.main && d.worktree === repo.local))).toSorted((a, b) => b.mtime - a.mtime);
 const count = drafts(list);

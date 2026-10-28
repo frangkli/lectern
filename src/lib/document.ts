@@ -182,13 +182,28 @@ export function withHeadingIds(html: string) {
   return { html: out, headings };
 }
 
+// A repo's tracked files, where a citation of one links to, and dir, the citing document's folder in it.
+export interface Sources {
+  files: Set<string>;
+  href: (path: string, lines: string) => string;
+  dir?: string;
+}
+
+// The repo names cited as `repo:path`, for linkSources' others.
+export const citedRepos = (html: string) => new Set([...html.matchAll(/<code>([^<:/]+):[^<]/g)].map((m) => m[1]));
+
 // Inline code citing a file in the document's repo, like `src/a.ts:42`, `a.ts:40-52` or `src/a.ts`,
 // becomes a link: href gets the tracked path and the "#L40-L52" lines, if any. A path matches a tracked
-// file exactly, or as the end of exactly one tracked path; anything else stays as written.
-export function linkSources(html: string, files: Set<string>, href: (path: string, lines: string) => string, dir = "") {
-  return html.replace(/(?<!<(?:pre|a)\b[^>]*>\s*)<code>([\w.@+-][\w./@+-]*)(?::(\d+)(?:-(\d+))?)?<\/code>/g, (match, path: string, from?: string, to?: string) => {
-    if (!from && !path.includes("/")) return match;
+// file exactly, or as the end of exactly one tracked path; anything else stays as written. A citation
+// prefixed with one of others' repo names, like `lectern:src/a.ts:42`, resolves in that repo instead.
+export function linkSources(html: string, own: Sources | undefined, others: ReadonlyMap<string, Sources> = new Map()) {
+  return html.replace(/(?<!<(?:pre|a)\b[^>]*>\s*)<code>([^<]+)<\/code>/g, (match, text: string) => {
+    const [, prefix, rest] = /^([^:/]+):(.+)$/.exec(text) ?? [];
+    const [sources, cited] = prefix && others.has(prefix) ? [others.get(prefix), rest] : [own, text];
+    const [, path, from, to] = /^([\w.@+-][\w./@+-]*)(?::(\d+)(?:-(\d+))?)?$/.exec(cited) ?? [];
+    if (!sources || !path || (!from && !path.includes("/"))) return match;
     // A path starting ./ or ../ is relative to dir, the document's folder; ./ may also mean the repo's root.
+    const { files, href, dir = "" } = sources;
     const bare = path.replace(/^\.\//, "");
     const exact = [/^\.\.?\//.test(path) && posix.join(dir, path), bare].find((candidate) => candidate && files.has(candidate));
     const matches = exact ? [exact] : [...files].filter((file) => file.endsWith(`/${bare}`));
