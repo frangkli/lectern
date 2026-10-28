@@ -1,7 +1,8 @@
 ---
-// The rail beside a document: Copy link (and Copy Markdown on a Markdown document), what it is, what to
-// compare it with and where else it lives, then its contents.
-// Narrow screens open it as a drawer from the menu button above the document.
+// The rail beside a document: its contents, and about it: Copy link (and Copy Markdown on a Markdown
+// document), what it is, what to compare it with and where else it lives. Wide screens pin the about part
+// at the top right of the page, as the library sits at the left; narrower ones keep it above the contents.
+// Narrow screens open the rail as a drawer from the menu button above the document.
 import type { Heading } from "../lib/document";
 import { ago, kindName, shownPath, stamp, statusOf } from "../lib/format";
 import { type Doc, docUrl } from "../lib/library";
@@ -21,6 +22,7 @@ const label = headings.length ? "Contents and details" : "Details";
   <button class="lectern-button lectern-rail-open" type="button" popovertarget="lectern-rail" aria-label={label} title={label}><Icon name="menu" /></button>
 </div>
 <aside class="lectern-rail" id="lectern-rail" popover aria-label="About this document">
+  <div class="lectern-about">
   <div class="lectern-copies">
     <button class="lectern-button lectern-copy" type="button" data-copy><Icon name="link" /><span>Copy link</span></button>
     {doc.path.endsWith(".md") && <button class="lectern-button lectern-copy" type="button" data-copy={`/raw${docUrl(doc)}`}><span>Copy Markdown</span></button>}
@@ -36,5 +38,6 @@ const label = headings.length ? "Contents and details" : "Details";
   </section>
   {compare.length > 0 && <section class="lectern-versions"><h2>Changes</h2><ul>{compare.map((item) => <li><a href={`${docUrl(doc)}?diff=${encodeURIComponent(item.key)}`} aria-current={item.key === against ? "page" : undefined}><span>{item.text}</span><Time ms={item.ms} text={ago(item.ms)} /></a></li>)}</ul></section>}
   {others.length > 0 && <section class="lectern-versions"><h2>Also on</h2><ul>{others.map((other) => <li><a href={docUrl(other)}><span>{other.worktree.key}</span><Time ms={other.mtime} text={ago(other.mtime)} /></a></li>)}</ul></section>}
+  </div>
   {headings.length > 0 && <nav class="lectern-toc" aria-label="Contents"><h2>Contents</h2><ol>{headings.map((h) => <li class={`h${h.level}`}><a href={`#${h.id}`}>{h.text}</a></li>)}</ol></nav>}
 </aside>
