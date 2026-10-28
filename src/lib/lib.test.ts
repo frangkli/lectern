@@ -1,7 +1,7 @@
 import { describe, expect, test } from "vitest";
 import { loadLanguages } from "./code";
 import { diffHtml } from "./diff";
-import { linkSources, markdown, parseDocument, withHeadingIds } from "./document";
+import { htmlCodeBlocks, linkSources, markdown, parseDocument, withHeadingIds } from "./document";
 import { ago, marks } from "./format";
 import { type Doc, type Repo, type Worktree, route, unique } from "./library";
 import { search } from "./search";
@@ -51,6 +51,50 @@ describe("markdown", () => {
   test("turns mermaid fences into diagrams and wraps tables", () => {
     expect(markdown("```mermaid\ngraph TD\n```\n")).toContain('<pre class="mermaid">graph TD');
     expect(markdown("| a |\n|---|\n| 1 |\n")).toMatch(/^<div class="scroll"><table>/);
+  });
+});
+
+describe("htmlCodeBlocks", () => {
+  test("gives HTML code blocks the same title, marked lines and notation comments", async () => {
+    const source = '<pre data-title="src/&quot;a&quot;.ts" data-lines="2"><code class="language-ts">const a = 1;\nconst b = 2;\nconst c = 3; // [!code ++]\n</code></pre>\n<pre><code class="language-ts">const d = &lt;T&gt;() =&gt; 4;</code></pre>';
+    await loadLanguages(source);
+    const html = htmlCodeBlocks(source);
+    expect(html).toContain('<figure class="lectern-code"><figcaption>src/&quot;a&quot;.ts</figcaption><pre class="shiki');
+    expect(html).toMatch(/<span class="line highlighted">.*const.*b/);
+    expect(html).toMatch(/<span class="line diff add">.*const.*c/);
+    expect(html).toContain("&#x3C;");
+    expect(html.match(/<figure/g)).toHaveLength(1);
+  });
+  test.each([
+    ["src/&#34;a&#34;.ts", "", "src/&quot;a&quot;.ts"],
+    ["it's &quot;x&quot;.ts", "", "it's &quot;x&quot;.ts"],
+    ["arr{1}.ts", ' data-lines="2"', "arr{1}.ts"],
+    ["a {1}", "", "a {1}"],
+    ["&#1114112;", "", "&amp;#1114112;"],
+  ])("captions %s%s verbatim and marks only data-lines", async (title, lines, caption) => {
+    const source = `<pre data-title="${title}"${lines}><code class="language-ts">const a = 1;\nconst b = 2;</code></pre>`;
+    await loadLanguages(source);
+    const html = htmlCodeBlocks(source);
+    expect(html).toContain(`<figcaption>${caption}</figcaption>`);
+    expect(html.match(/class="line highlighted"/g)?.length ?? 0).toBe(lines ? 1 : 0);
+    if (lines) expect(html).toMatch(/<span class="line highlighted">.*const.*b/);
+  });
+  test.each([["2} title={x", "b"], ["1, 2", "a"]])("reads only line numbers from data-lines=%j", async (lines, marked) => {
+    const source = `<pre data-lines="${lines}"><code class="language-ts">const a = 1;\nconst b = 2;</code></pre>`;
+    await loadLanguages(source);
+    const html = htmlCodeBlocks(source);
+    expect(html).not.toContain("<figure");
+    expect(html).toMatch(new RegExp(`<span class="line highlighted">.*const.*${marked}`));
+  });
+  test("leaves a block in a language it hasn't loaded as written", async () => {
+    const source = '<pre data-title="x"><code class="language-zzz">plain &amp; simple</code></pre>';
+    await loadLanguages(source);
+    expect(htmlCodeBlocks(source)).toBe(source);
+  });
+  test("leaves an out-of-range character reference in code as written", async () => {
+    const source = '<pre><code class="language-ts">&#1114112;</code></pre>';
+    await loadLanguages(source);
+    expect(htmlCodeBlocks(source)).toContain("1114112");
   });
 });
 
