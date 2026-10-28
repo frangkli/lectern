@@ -197,17 +197,19 @@ export function linkSources(html: string, files: Set<string>, href: (path: strin
   });
 }
 
+// An HTML document's kit, swapped for Lectern's: a copy pasted in as <style id="kit"> and <script id="kit-js">,
+// or a link to the installed skill's files as <link id="kit"> and <script id="kit-js" src>. A page without them keeps its own styles.
+export const withKit = (html: string) =>
+  html
+    .replace(/<style id="kit">[\s\S]*?<\/style>|<link\b[^>]*\sid="kit"[^>]*>/, () => `<style id="kit">${style}</style>`)
+    .replace(/<script\b[^>]*\sid="kit-js"[^>]*>[\s\S]*?<\/script>/, () => `<script id="kit-js">${script}</script>`);
+
 // A document as the browser gets it: Markdown rendered with the kit, every heading linkable. An HTML
-// document carries a copy of the kit from when it was written; it gets Lectern's instead.
+// document carries or links a kit from when it was written; it gets Lectern's instead.
 export async function documentHtml(file: string) {
   const source = await readFile(file, "utf8");
   await loadLanguages(source);
-  if (extname(file) !== ".md") {
-    const html = htmlCodeBlocks(source);
-    return withHeadingIds(html
-      .replace(/(<style id="kit">)[\s\S]*?(<\/style>)/, (_, open, close) => open + style + close)
-      .replace(/(<script id="kit-js">)[\s\S]*?(<\/script>)/, (_, open, close) => open + script + close));
-  }
+  if (extname(file) !== ".md") return withHeadingIds(withKit(htmlCodeBlocks(source)));
   const { fields, body } = frontMatter(source);
   const title = escapeHtml(fields.title || /^# (.+)$/m.exec(body)?.[1] || basename(file));
   const head = `<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>${title}</title>`;
