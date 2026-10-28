@@ -8,7 +8,10 @@ import { kitFile } from "./config";
 export const escapeHtml = (text: string) =>
   String(text).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]!);
 const entities: Record<string, string> = { amp: "&", lt: "<", gt: ">", quot: '"', nbsp: " " };
-const decodeHtml = (html: string) => html.replace(/&(?:#(\d+)|#x([\da-f]+)|(\w+));/gi, (m, dec, hex, name) => (dec || hex ? String.fromCodePoint(dec ? Number(dec) : parseInt(hex, 16)) : (entities[name] ?? m)));
+const decodeHtml = (html: string) => html.replace(/&(?:#(\d+)|#x([\da-f]+)|(\w+));/gi, (m, dec, hex, name) => {
+  const n = dec ? Number(dec) : parseInt(hex, 16);
+  return name ? (entities[name] ?? m) : n > 0x10ffff ? m : String.fromCodePoint(n);
+});
 export const stripTags = (html: string) =>
   html.replace(/<[^>]+>/g, " ").replace(/&(\w+);/g, (m, name) => entities[name] ?? m).replace(/\s+/g, " ").trim();
 
@@ -113,6 +116,15 @@ export const markdown = (source: string) =>
     .replace(/<pre><code class="language-mermaid">([\s\S]*?)<\/code><\/pre>/g, '<pre class="mermaid">$1</pre>')
     .replace(/<table>[\s\S]*?<\/table>/g, '<div class="scroll">$&</div>');
 
+// Code an HTML document wrote as <pre><code class="language-…">, highlighted like Markdown's. The <pre>'s
+// data-title and data-lines="2,4-5" stand in for a fence's title="…" and {2,4-5}. Call loadLanguages first.
+export const htmlCodeBlocks = (html: string) =>
+  html.replace(/<pre((?:\s+data-(?:title|lines)="[^"]*")*)\s*>\s*<code class="language-([\w+-]+)">([^<]*)<\/code>\s*<\/pre>/g, (block, attrs: string, lang: string, code: string) => {
+    const title = /data-title="([^"]*)"/.exec(attrs)?.[1];
+    const lines = /data-lines="([^"]*)"/.exec(attrs)?.[1].replace(/[^\d,-]/g, "");
+    return codeBlock(decodeHtml(code), lang, lines ? `{${lines}}` : "", title && decodeHtml(title)) ?? block;
+  });
+
 // The kit's CSS or script, read from the visual-doc template so Lectern matches every document.
 export async function kit(tag: "style" | "script") {
   const template = await readFile(kitFile, "utf8").catch(() => "");
@@ -192,8 +204,7 @@ export async function documentHtml(file: string) {
   const source = await readFile(file, "utf8");
   const [style, script] = await Promise.all([kit("style"), kit("script"), loadLanguages(source)]);
   if (extname(file) !== ".md") {
-    // Code the author wrote as <pre><code class="language-…"> is highlighted like Markdown's.
-    const html = source.replace(/<pre>\s*<code class="language-([\w+-]+)">([^<]*)<\/code>\s*<\/pre>/g, (block, lang, code) => codeBlock(decodeHtml(code), lang) ?? block);
+    const html = htmlCodeBlocks(source);
     // Without a kit to serve (the template is missing), the document keeps its own.
     if (!style) return withHeadingIds(html);
     return withHeadingIds(html
