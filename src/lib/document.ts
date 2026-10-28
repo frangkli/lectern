@@ -133,7 +133,7 @@ export const kit = { style, script };
 // The offsets of the h2 and h3 that sit inside a component (a card, phase, tab, callout, figure or
 // details). Their titles name parts of a figure, not sections, so they stay out of the contents list.
 // Comments, styles and scripts are skipped, since the kit's own comments mention tags.
-const componentClass = /\bclass="[^"]*\b(arch|box|phases|decisions|tabs|flow|callout|metrics|stack)\b/;
+const componentClass = /\bclass="[^"]*\b(arch|box|phases|decisions|findings|tabs|flow|callout|metrics|stack)\b/;
 function nestedHeadings(html: string) {
   const skipped = [...html.matchAll(/<!--[\s\S]*?-->|<(script|style)\b[\s\S]*?<\/\1>/gi)].map((m) => [m.index, m.index + m[0].length]);
   const nested = new Set<number>();
@@ -208,7 +208,9 @@ export function linkSources(html: string, own: Sources | undefined, others: Read
     const exact = [/^\.\.?\//.test(path) && posix.join(dir, path), bare].find((candidate) => candidate && files.has(candidate));
     const matches = exact ? [exact] : [...files].filter((file) => file.endsWith(`/${bare}`));
     if (matches.length !== 1) return match;
-    return `<a class="lectern-src" href="${href(matches[0], from ? `#L${from}${to ? `-L${to}` : ""}` : "")}">${match}</a>`;
+    // The link shows the file's name and lines, and the full citation on hover, so a long path doesn't crowd the line.
+    const label = `${posix.basename(path)}${from ? `:${from}${to ? `-${to}` : ""}` : ""}`;
+    return `<a class="lectern-src" href="${href(matches[0], from ? `#L${from}${to ? `-L${to}` : ""}` : "")}" title="${text}"><code>${label}</code></a>`;
   });
 }
 

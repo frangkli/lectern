@@ -1,11 +1,18 @@
 
 /* Black and white. Ink on paper carries every page; colour appears only where it means something:
    --good green = recommended, chosen, new, done; --warn ochre = a decision for the reader, a draft;
-   --bad red = risk; --info blue = neutral emphasis. Each has -soft (fill) and -line (border).
-   Charts that tell categories apart take --cat-1 to --cat-8 in order; the order is checked for
-   colour-blind separation, so don't reorder it. --accent is --good, for pages written against older kits.
+   --bad red = risk; --info blue = neutral emphasis. Each is a --cat colour, so every mark on the page
+   shares one tone, and has -soft (fill), -line (border) and -text (the colour mixed toward ink, for text).
+   --neutral greys a mark that means only its size. Charts that tell categories apart take --cat-1 to
+   --cat-8 in order (stack parts and series s1 to s4 alike); the order is checked for colour-blind
+   separation, so don't reorder it. Shapes: panels take --radius, inline chips 4px, data marks
+   (bars, stacks, dots) are round. --accent is --good, for pages written against older kits.
    Type: Hanken Grotesk and Geist Mono when the page has them (Lectern loads them), else the system faces.
-   Body 16/25.6 at weight 420, h1 30, h2 20, h3 17, all in one 872px column; headings and the page's facts in black,
+   One type scale, each step with one job: h1 30 (title), metric 28 (a tile's number), h2 20, lede 18, h3 17;
+   body 16 for text read in the flow (prose, lead block, steps, findings, card titles); small 14 for text inside
+   figures and reference panels (cards, tables, collapsibles, charts, code); label 13 for the secondary line
+   (captions, meta, checks, keys, table heads); tag 11.5 for tags and step numerals. Page CSS sets no other
+   size. Body 16/25.6 at weight 420, in one 872px column; headings and the page's facts in black,
    prose in dark grey, rules as hairlines. Charts fill a mark with a tint of its colour and outline it
    in the colour itself.
    Light and dark follow the system until the theme control (kit-js) sets data-theme on <html>. */
@@ -24,14 +31,19 @@
   --canvas: var(--bg);
   --link: var(--ink);
   --focus: var(--ink);
-  --good: light-dark(#0b7a3b, #4cc77f);
-  --warn: light-dark(#8f5a00, #f2b544);
-  --bad: light-dark(#c4162a, #ff6b6b);
-  --info: light-dark(#0b57d0, #7aa7ff);
-  --good-soft: color-mix(in oklab, var(--good) 8%, var(--bg));
-  --warn-soft: color-mix(in oklab, var(--warn) 10%, var(--bg));
-  --bad-soft: color-mix(in oklab, var(--bad) 8%, var(--bg));
-  --info-soft: color-mix(in oklab, var(--info) 8%, var(--bg));
+  --good: var(--cat-3);
+  --warn: var(--cat-4);
+  --bad: var(--cat-8);
+  --info: var(--cat-1);
+  --good-text: color-mix(in oklab, var(--good) 70%, var(--ink));
+  --warn-text: color-mix(in oklab, var(--warn) 70%, var(--ink));
+  --bad-text: color-mix(in oklab, var(--bad) 70%, var(--ink));
+  --info-text: color-mix(in oklab, var(--info) 70%, var(--ink));
+  --neutral: light-dark(#a8a8a8, #707070);
+  --good-soft: color-mix(in oklab, var(--good) 12%, var(--bg));
+  --warn-soft: color-mix(in oklab, var(--warn) 13%, var(--bg));
+  --bad-soft: color-mix(in oklab, var(--bad) 12%, var(--bg));
+  --info-soft: color-mix(in oklab, var(--info) 12%, var(--bg));
   --good-line: color-mix(in oklab, var(--good) 55%, var(--bg));
   --warn-line: color-mix(in oklab, var(--warn) 55%, var(--bg));
   --bad-line: color-mix(in oklab, var(--bad) 55%, var(--bg));
@@ -45,11 +57,11 @@
   --cat-5: light-dark(#e87ba4, #d55181);
   --cat-6: light-dark(#008300, #008300);
   --cat-7: light-dark(#6250d6, #9085e9);
-  --cat-8: light-dark(#e34948, #e66767);
+  --cat-8: light-dark(#e34948, #e5484d);
   --font: "Hanken Grotesk", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   --mono: "Geist Mono", ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
-  --fs-body: 16px; --fs-lede: 18px; --fs-small: 14px; --fs-label: 13px; --fs-h1: 30px; --fs-h2: 20px; --fs-h3: 17px;
-  --radius: 8px;
+  --fs-h1: 30px; --fs-metric: 28px; --fs-h2: 20px; --fs-lede: 18px; --fs-h3: 17px; --fs-body: 16px; --fs-small: 14px; --fs-label: 13px; --fs-tag: 11.5px;
+  --radius: 6px;
   --measure: none;
   --page: 936px;
   --gutter: 32px;
@@ -113,18 +125,18 @@ hr:has(+ h2) { display: none; }
 blockquote { padding-left: 16px; color: var(--text-2); border-left: 2px solid var(--border); }
 blockquote > :last-child { margin-bottom: 0; }
 small, .small { font-size: var(--fs-small); }
-.muted, figcaption { font-size: var(--fs-small); color: var(--muted); }
+.muted, figcaption { font-size: var(--fs-label); color: var(--muted); }
 code, pre, kbd, samp { font-family: var(--mono); font-variant-ligatures: none; }
 code { padding: 0.1em 0.3em; font-size: 0.875em; background: color-mix(in oklab, var(--ink) 5%, var(--bg)); border-radius: 4px; overflow-wrap: anywhere; }
 /* Code blocks: a faint panel, 14/20, a copy icon in the corner. A block marked class="language-…"
    (a Markdown fence's language does this) is highlighted in GitHub's colours. */
-pre { margin: 20px 0; padding: 12px 56px 12px 16px; overflow-x: auto; font-size: 14px; line-height: 20px; letter-spacing: 0; tab-size: 2; color: var(--text); background: light-dark(#fafafa, #0a0a0a); border: 1px solid var(--border-soft); border-radius: var(--radius); }
+pre { margin: 20px 0; padding: 12px 56px 12px 16px; overflow-x: auto; font-size: var(--fs-small); line-height: 20px; letter-spacing: 0; tab-size: 2; color: var(--text); background: light-dark(#fafafa, #0a0a0a); border: 1px solid var(--border-soft); border-radius: var(--radius); }
 pre code { padding: 0; font-size: inherit; background: none; overflow-wrap: normal; }
 .code { position: relative; }
 .copy { position: absolute; top: 6px; right: 6px; display: grid; place-items: center; width: 30px; height: 30px; padding: 0; color: var(--muted); background: none; border: 0; border-radius: 6px; cursor: pointer; }
 .copy svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
 .copy:hover { color: var(--ink); background: var(--sunken); }
-.copy[data-copied] { color: var(--good); }
+.copy[data-copied] { color: var(--good-text); }
 .hljs-comment, .hljs-quote { color: light-dark(#6e7781, #8b949e); }
 .hljs-keyword, .hljs-doctag, .hljs-meta .hljs-keyword, .hljs-template-tag, .hljs-type, .hljs-variable.language_ { color: light-dark(#cf222e, #ff7b72); }
 .hljs-title, .hljs-title.function_, .hljs-title.class_ { color: light-dark(#8250df, #d2a8ff); }
@@ -147,28 +159,54 @@ figure { margin: 20px 0 28px; }
 figcaption { max-width: var(--measure); margin-top: 8px; }
 mark { padding: 0 0.08em; color: var(--bg); background: var(--ink); }
 
-/* Tables: no box, hairlines under the header and between rows. */
-table { width: 100%; margin: 0 0 24px; font-size: 14px; line-height: 1.7; border-collapse: collapse; }
-th, td { padding: 8px 16px 8px 0; text-align: left; vertical-align: top; border-bottom: 1px solid var(--border); }
-:is(th, td):last-child { padding-right: 0; }
-thead th { padding-top: 0; font-weight: 600; color: var(--ink); white-space: nowrap; }
+/* Tables: a framed panel, the header on a grey band, hairlines between rows, figures in tabular digits. A cell
+   or row marked .good, .warn, .bad or .info takes that meaning's tint, so a table of statuses reads as a grid. */
+table { width: 100%; margin: 0 0 24px; font-size: var(--fs-small); line-height: 1.6; border-collapse: separate; border-spacing: 0; font-variant-numeric: tabular-nums; border: 1px solid var(--border); border-radius: var(--radius); }
+/* The corner cells follow the frame's corners, so a tinted or grey cell doesn't poke out. */
+:is(thead, table:not(:has(thead)) > tbody:first-of-type) > tr:first-child > :first-child { border-top-left-radius: calc(var(--radius) - 1px); }
+:is(thead, table:not(:has(thead)) > tbody:first-of-type) > tr:first-child > :last-child { border-top-right-radius: calc(var(--radius) - 1px); }
+tbody:last-of-type > tr:last-child > :first-child { border-bottom-left-radius: calc(var(--radius) - 1px); }
+tbody:last-of-type > tr:last-child > :last-child { border-bottom-right-radius: calc(var(--radius) - 1px); }
+th, td { padding: 10px 14px; text-align: left; vertical-align: top; border-bottom: 1px solid var(--border-soft); }
+thead th { padding-block: 8px; font-size: var(--fs-label); font-weight: 600; color: var(--text-2); white-space: nowrap; background: var(--sunken); border-bottom: 0; }
 tbody tr:last-child > * { border-bottom: 0; }
 tbody th { font-weight: 600; color: var(--ink); }
+col.chosen { background: var(--good-soft); }
+:is(th, td).num { text-align: right; font-variant-numeric: tabular-nums; }
+/* A swatch keys a table row or a word to a chart's colour: class s1 to s4, or style="--swatch: …". */
+.swatch { display: inline-block; width: 10px; height: 10px; margin-right: 8px; vertical-align: 0; background: var(--swatch, var(--muted)); border-radius: 2px; }
+.swatch.s1 { --swatch: var(--cat-1); }
+.swatch.s2 { --swatch: var(--cat-2); }
+.swatch.s3 { --swatch: var(--cat-3); }
+.swatch.s4 { --swatch: var(--cat-4); }
+thead th.chosen { color: var(--good-text); }
+:is(td, th, tr).good, tr.chosen { --tone: var(--good); --fill: var(--good-soft); }
+:is(td, th, tr).warn { --tone: var(--warn); --fill: var(--warn-soft); }
+:is(td, th, tr).bad, tr.risk { --tone: var(--bad); --fill: var(--bad-soft); }
+:is(td, th, tr).info { --tone: var(--info); --fill: var(--info-soft); }
+tbody :is(td, th):is(.good, .warn, .bad, .info) { font-weight: 550; color: color-mix(in oklab, var(--tone) 70%, var(--ink)); background: color-mix(in oklab, var(--tone) 16%, transparent); }
+tbody tr:is(.good, .warn, .bad, .info, .chosen, .risk) > * { background: color-mix(in oklab, var(--tone) 14%, transparent); }
+tbody tr:is(.good, .warn, .bad, .info, .chosen, .risk) > :first-child { color: color-mix(in oklab, var(--tone) 70%, var(--ink)); box-shadow: inset 2px 0 var(--tone); }
 :is(.scroll, .table-wrap) { margin: 0 0 20px; overflow-x: auto; }
 :is(.scroll, .table-wrap) > table { margin: 0; }
 :is(.scroll, .table-wrap, table) + p { max-width: none; }
-tr.chosen > * { background: var(--good-soft); }
-tr.chosen > :first-child { padding-left: 10px; color: var(--good); }
-tr.risk > * { background: var(--bad-soft); }
-tr.risk > :first-child { padding-left: 10px; color: var(--bad); }
 
-/* Details: a ruled disclosure. */
-details { margin: 16px 0 20px; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
-details > summary { display: flex; align-items: center; gap: 8px; min-height: 40px; padding: 8px 0; font-weight: 600; color: var(--ink); list-style: none; cursor: pointer; }
+/* Details: a grey block with rounded corners; the summary is its title bar. */
+details { margin: 16px 0 20px; font-size: var(--fs-small); line-height: 1.6; background: var(--sunken); border: 1px solid var(--border-soft); border-radius: var(--radius); }
+details > summary { display: flex; align-items: center; gap: 8px; min-height: 44px; padding: 10px 16px; font-weight: 600; color: var(--ink); list-style: none; cursor: pointer; border-radius: var(--radius); }
+/* A summary's last .meta or .tag sits at its right edge: a file's change, a step's location. */
+details > summary > :is(.meta, .tag):last-child { margin-left: auto; }
+details > summary > .meta { font-size: var(--fs-label); font-weight: 400; color: var(--muted); }
+details > summary:hover { background: color-mix(in oklab, var(--ink) 3%, var(--sunken)); }
+details > :not(summary) { margin-inline: 16px; }
+details > :nth-child(2) { margin-top: 4px; }
+details pre { background: var(--bg); }
+details :not(pre) > code { background: color-mix(in oklab, var(--ink) 6%, var(--sunken)); }
+details thead th { background: var(--bg); }
 details > summary::-webkit-details-marker { display: none; }
 details > summary::before { content: ""; flex: none; width: 16px; height: 16px; background: currentColor; -webkit-mask: var(--icon-chevron) center / contain no-repeat; mask: var(--icon-chevron) center / contain no-repeat; transform: rotate(-90deg); transition: transform 160ms var(--ease); }
 details[open] > summary::before { transform: none; }
-details > :last-child:not(summary) { margin-bottom: 14px; }
+details > :last-child:not(summary) { margin-bottom: 16px; }
 
 /* Theme control, for a page opened on its own. */
 .theme { float: right; display: inline-flex; margin: 0 0 12px 16px; border: 1px solid var(--border); border-radius: 6px; overflow: hidden; }
@@ -182,31 +220,31 @@ details > :last-child:not(summary) { margin-bottom: 14px; }
    line of short pairs. */
 main > header { display: flex; flex-direction: column; align-items: center; margin-bottom: 40px; text-align: center; }
 main > header > h1 { order: -1; }
-.eyebrow { order: -2; margin: 0 0 12px; font-size: 15px; font-weight: 500; color: var(--text-2); }
+.eyebrow { order: -2; margin: 0 0 12px; font-size: var(--fs-small); font-weight: 500; color: var(--text-2); }
 [data-framed] .eyebrow { display: none; }
 main > header > h1 { max-width: 760px; margin-bottom: 8px; }
 main > header > p { max-width: 640px; color: var(--text-2); }
 .lede { font-size: var(--fs-lede); line-height: 1.6; color: var(--text-2); }
-.facts { display: flex; flex-wrap: wrap; justify-content: center; gap: 2px 20px; max-width: 760px; margin: 4px 0 0; padding: 0; font-size: 14px; }
+.facts { display: flex; flex-wrap: wrap; justify-content: center; gap: 2px 20px; max-width: 760px; margin: 4px 0 0; padding: 0; font-size: var(--fs-small); }
 .facts div { min-width: 0; }
 .facts dt { display: inline; font-weight: 500; color: var(--ink); white-space: nowrap; }
 .facts dt::after { content: ": "; }
 .facts dd { display: inline; margin: 0; color: var(--text-2); }
 
 /* Tags and badges: a small outlined word. .new/.good, .ask/.draft/.warn, .bad and .info give it a meaning. */
-.tag, .badge { display: inline-flex; align-items: center; height: 19px; padding: 0 5px; font: 600 11.5px/1 var(--font); white-space: nowrap; vertical-align: 0.12em; color: var(--text-2); border: 1px solid var(--border); border-radius: 4px; }
+.tag, .badge { display: inline-flex; align-items: center; height: 19px; padding: 0 5px; font: 600 var(--fs-tag)/1 var(--font); white-space: nowrap; vertical-align: 0.12em; color: var(--text-2); border: 1px solid var(--border); border-radius: 4px; }
 h1 :is(.tag, .badge) { vertical-align: 0.3em; }
-:is(.tag, .badge):is(.new, .good) { color: var(--good); border-color: var(--good-line); }
-:is(.tag, .badge):is(.ask, .draft, .warn) { color: var(--warn); border-color: var(--warn-line); }
-:is(.tag, .badge).bad { color: var(--bad); border-color: var(--bad-line); }
-:is(.tag, .badge).info { color: var(--info); border-color: var(--info-line); }
-.delta.good { color: var(--good); }
-.delta.warn { color: var(--warn); }
-.delta.bad { color: var(--bad); }
+:is(.tag, .badge):is(.new, .good) { color: var(--good-text); border-color: var(--good-line); }
+:is(.tag, .badge):is(.ask, .draft, .warn) { color: var(--warn-text); border-color: var(--warn-line); }
+:is(.tag, .badge).bad { color: var(--bad-text); border-color: var(--bad-line); }
+:is(.tag, .badge).info { color: var(--info-text); border-color: var(--info-line); }
+.delta.good { color: var(--good-text); }
+.delta.warn { color: var(--warn-text); }
+.delta.bad { color: var(--bad-text); }
 
 /* Callouts: a grey panel; the mark's colour says what kind. .recommend/.recommendation green,
    .decision ochre, .risk red, a plain .callout black. .callout-title runs into its paragraph. */
-:is(.callout, .recommendation, .decision) { --tone: var(--ink); --icon: var(--icon-info); position: relative; max-width: var(--measure); margin: 24px 0; padding: 14px 18px 14px 46px; font-size: 15px; line-height: 1.6; background: var(--sunken); border-radius: 12px; }
+:is(.callout, .recommendation, .decision) { --tone: var(--ink); --icon: var(--icon-info); position: relative; max-width: var(--measure); margin: 24px 0; padding: 14px 18px 14px 46px; font-size: var(--fs-body); line-height: 1.6; background: var(--sunken); border-radius: var(--radius); }
 :is(.callout, .recommendation, .decision)::before { content: ""; position: absolute; top: 17px; left: 17px; width: 18px; height: 18px; background: var(--tone); -webkit-mask: var(--icon) center / contain no-repeat; mask: var(--icon) center / contain no-repeat; }
 :is(.callout, .recommendation, .decision) > :last-child { margin-bottom: 0; }
 :is(.callout, .recommendation, .decision) > p { margin-bottom: 8px; }
@@ -219,82 +257,153 @@ h1 :is(.tag, .badge) { vertical-align: 0.3em; }
 
 /* Card grid. .span2/.span3 widen a card, .down is the connector row, .box.new a new part, .owner who runs it. */
 .arch { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin: 20px 0; }
-.box { min-width: 0; padding: 16px 18px; font-size: 14px; line-height: 1.6; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; }
-.box.new { background: var(--good-soft); border-color: var(--good-line); }
-.box h3 { margin: 0 0 6px; font-size: 15px; letter-spacing: -0.01em; }
+.box { min-width: 0; padding: 16px 18px; font-size: var(--fs-small); line-height: 1.6; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); }
+.box:is(.new, .good) { --tone: var(--good); --icon: var(--icon-good); background: var(--good-soft); border-color: var(--good-line); }
+.box.warn { --tone: var(--warn); --icon: var(--icon-warn); background: var(--warn-soft); border-color: var(--warn-line); }
+.box.bad { --tone: var(--bad); --icon: var(--icon-bad); background: var(--bad-soft); border-color: var(--bad-line); }
+.box.info { --tone: var(--info); --icon: var(--icon-info); background: var(--info-soft); border-color: var(--info-line); }
+.box:is(.good, .warn, .bad, .info) > h3:first-child::before { content: ""; display: inline-block; width: 16px; height: 16px; margin-right: 8px; vertical-align: -0.15em; background: var(--tone); -webkit-mask: var(--icon) center / contain no-repeat; mask: var(--icon) center / contain no-repeat; }
+.box h3 { margin: 0 0 6px; font-size: var(--fs-body); letter-spacing: -0.01em; }
 .box h3 :is(.tag, .badge) { margin-left: 6px; vertical-align: 0.12em; }
 .box :is(p, ul, ol) { margin: 0 0 6px; }
 .box li { margin-bottom: 2px; }
 .box > :last-child { margin-bottom: 0; }
-.owner { margin-top: 8px; font-size: 12px; color: var(--muted); }
+.owner, .box .meta { margin-top: 10px; font-size: var(--fs-label); color: var(--muted); }
 .span2 { grid-column: span 2; }
 .span3, .down { grid-column: 1 / -1; }
-.down { margin: -4px 0; font-size: 12px; text-align: center; color: var(--muted); }
+.down { margin: -4px 0; font-size: var(--fs-label); text-align: center; color: var(--muted); }
 
 /* Flow: steps left to right joined by a drawn arrow; top to bottom on a phone. */
 .flow { display: flex; gap: 32px; max-width: none; margin: 20px 0; padding: 0; list-style: none; }
-.flow > li { position: relative; flex: 1; min-width: 0; margin: 0; padding: 12px 14px; font-size: 14px; line-height: 1.5; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; }
+.flow > li { position: relative; flex: 1; min-width: 0; margin: 0; padding: 12px 14px; font-size: var(--fs-small); line-height: 1.5; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); }
 .flow > li.good { background: var(--good-soft); border-color: var(--good-line); }
 .flow > li.bad { background: var(--bad-soft); border-color: var(--bad-line); }
 .flow strong, .flow small { display: block; }
-.flow small { margin-top: 2px; font-size: 12px; color: var(--muted); }
+.flow small { margin-top: 2px; font-size: var(--fs-label); color: var(--muted); }
 .flow > li + li::before { content: ""; position: absolute; top: 50%; left: -25px; width: 18px; height: 18px; margin-top: -9px; background: var(--ink); -webkit-mask: var(--icon-arrow) center / contain no-repeat; mask: var(--icon-arrow) center / contain no-repeat; }
 
 /* Phases and decisions: numbered steps set as a ruled list, the numeral in the margin. Steps are
    black; decisions the reader owns are ochre. */
-:is(.phases, .decisions) { max-width: var(--measure); margin: 16px 0 24px; padding: 0; list-style: none; counter-reset: step; }
-:is(.phases, .decisions) > li { position: relative; max-width: none; margin: 0; padding: 12px 0 12px 36px; counter-increment: step; border-bottom: 1px solid var(--border); }
-:is(.phases, .decisions) > li::before { content: counter(step); position: absolute; top: 12px; left: 0; display: grid; place-items: center; width: 22px; height: 22px; font-size: 12px; font-weight: 600; line-height: 1; color: var(--bg); background: var(--ink); border-radius: 50%; }
+:is(.phases, .decisions) { max-width: var(--measure); margin: 12px 0 20px; padding: 0; list-style: none; counter-reset: step; }
+:is(.phases, .decisions) > li { position: relative; max-width: none; margin: 0; padding: 8px 0 8px 32px; counter-increment: step; border-bottom: 1px solid var(--border); }
+:is(.phases, .decisions) > li::before { content: counter(step); position: absolute; top: 10px; left: 0; display: grid; place-items: center; width: 20px; height: 20px; font-size: var(--fs-tag); font-weight: 600; line-height: 1; color: var(--bg); background: var(--ink); border-radius: 50%; }
 .decisions > li::before { background: var(--warn); }
-.phases h3 { margin: 0 0 2px; font-size: var(--fs-body); letter-spacing: 0; }
-.phases .check, .decisions .default { display: block; margin-top: 2px; font-size: 13.5px; color: var(--muted); }
+.phases h3 { margin: 0; font-size: var(--fs-body); letter-spacing: 0; }
+.phases li > p { margin: 0; }
+.phases > li.good::before { content: "✓"; background: var(--good); }
+.phases > li.info::before { background: var(--info); }
+.phases :is(.check, .meta), .decisions :is(.default, .meta) { display: block; margin-top: 0; font-size: var(--fs-label); color: var(--muted); }
+
+/* Timeline: dated events down a rule, each its <time> then one line; li.good, .warn or .bad marks a
+   change of state (resolved, degraded, failing), and the rest stay grey. */
+.timeline { max-width: var(--measure); margin: 12px 0 20px; padding: 0; list-style: none; }
+.timeline > li { position: relative; display: grid; grid-template-columns: 8.5em 1fr; gap: 0 16px; max-width: none; margin: 0; padding: 4px 0 4px 22px; }
+.timeline > li::before { content: ""; position: absolute; top: 12px; left: 0; width: 9px; height: 9px; background: var(--tone, var(--muted)); border-radius: 50%; }
+.timeline > li:not(:last-child)::after { content: ""; position: absolute; top: 25px; bottom: -8px; left: 4px; width: 1px; background: var(--border); }
+.timeline > li:is(.good, .warn, .bad) > :not(time) { font-weight: 550; color: var(--ink); }
+.timeline time { font-size: var(--fs-label); font-variant-numeric: tabular-nums; color: var(--muted); padding-top: 2px; }
+.timeline > li.good { --tone: var(--good); }
+.timeline > li.warn { --tone: var(--warn); }
+.timeline > li.bad { --tone: var(--bad); }
+
+/* Key terms: a framed list, each term on a grey band beside its meaning; stacked on a phone. */
+dl.terms { display: grid; grid-template-columns: minmax(110px, max-content) 1fr; max-width: none; margin: 16px 0 24px; overflow: hidden; font-size: var(--fs-small); line-height: 1.6; border: 1px solid var(--border); border-radius: var(--radius); }
+dl.terms :is(dt, dd) { margin: 0; padding: 8px 14px; border-top: 1px solid var(--border-soft); }
+dl.terms :is(dt, dd):first-of-type { border-top: 0; }
+dl.terms dt { font-weight: 600; color: var(--ink); background: var(--sunken); }
+
+/* Findings: a ruled list, each item led by its severity icon: .bad a problem, .warn a gap, .info a
+   note, .good what already works. Most severe first. */
+.findings { margin: 16px 0 24px; padding: 0; list-style: none; }
+.findings > li { --tone: var(--muted); --icon: var(--icon-info); position: relative; max-width: none; margin: 0; padding: 8px 0 8px 28px; border-bottom: 1px solid var(--border-soft); }
+.findings > li::before { content: ""; position: absolute; top: 12px; left: 1px; width: 16px; height: 16px; background: var(--tone); -webkit-mask: var(--icon) center / contain no-repeat; mask: var(--icon) center / contain no-repeat; }
+.findings > li.bad { --tone: var(--bad); --icon: var(--icon-bad); }
+.findings > li.warn { --tone: var(--warn); --icon: var(--icon-warn); }
+.findings > li.info { --tone: var(--info); }
+.findings > li.good { --tone: var(--good); --icon: var(--icon-good); }
+.findings h3 { margin: 0; font-size: var(--fs-body); letter-spacing: 0; }
+.findings h3 :is(.tag, .badge) { margin-left: 6px; }
+.findings :is(p, ul, ol) { margin: 0; }
+.findings > li > :last-child { margin-bottom: 0; }
+.findings .meta { font-size: var(--fs-label); color: var(--muted); }
+/* A compact findings list, for the less severe items of a long list: each item is its title and meta on one line. */
+.findings.compact > li { padding-block: 4px; }
+.findings.compact > li::before { top: 8px; }
+.findings.compact h3 { display: inline; font-size: var(--fs-small); font-weight: 600; }
+.findings.compact .meta { display: inline; margin-left: 8px; }
+
+/* Scale: items in order along one quality (cheap to strong, small to large), named at both ends. */
+.scale { margin: 16px 0 24px; }
+.scale ol { display: flex; flex-wrap: wrap; gap: 6px; max-width: none; margin: 0; padding: 0; list-style: none; }
+.scale li { margin: 0; padding: 4px 10px; font-size: var(--fs-small); color: var(--ink); background: var(--sunken); border: 1px solid var(--border-soft); border-radius: var(--radius); }
+.scale .ends { display: flex; justify-content: space-between; gap: 16px; margin: 8px 0 0; padding-top: 6px; font-size: var(--fs-label); color: var(--muted); border-top: 2px solid; border-image: linear-gradient(90deg, var(--border), var(--ink)) 1; }
 
 /* Metrics: measured numbers, each under an ink rule with its comparison and source. */
 .metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 20px 24px; margin: 20px 0 24px; }
-.metric { display: flex; flex-direction: column; gap: 2px; min-width: 0; padding: 14px 16px; border: 1px solid var(--border); border-radius: 12px; }
-.metric .label { font-size: 13px; line-height: 1.4; color: var(--text-2); }
-.metric .value { margin-top: 6px; font-size: 28px; font-weight: 600; line-height: 1.1; letter-spacing: -0.02em; color: var(--ink); }
-.metric .delta { font-size: 13px; font-weight: 600; }
-.metric .source { margin-top: auto; padding-top: 6px; font-size: 12px; color: var(--muted); }
+.metric { display: flex; flex-direction: column; gap: 2px; min-width: 0; padding: 14px 16px; border: 1px solid var(--border); border-radius: var(--radius); }
+.metric .label { font-size: var(--fs-label); line-height: 1.4; color: var(--text-2); }
+.metric .value { margin-top: 6px; font-size: var(--fs-metric); font-weight: 600; line-height: 1.1; letter-spacing: -0.02em; color: var(--ink); }
+.metric .delta { font-size: var(--fs-label); font-weight: 600; }
+.metric .source { margin-top: auto; padding-top: 6px; font-size: var(--fs-label); color: var(--muted); }
 
-/* Bars: --value is the bar's share of the full width; --start makes a waterfall. A bar is a tint
-   outlined in its colour, grey unless it means something, drawn from a black axis. */
-.bars { display: grid; gap: 8px; max-width: 720px; margin: 14px 0 20px; }
-.bar { --tone: var(--ink); display: grid; grid-template-columns: minmax(90px, 180px) 1fr minmax(56px, auto); gap: 12px; align-items: center; font-size: 14px; }
-.bar .track { position: relative; height: 26px; border-left: 1px solid var(--ink); }
-.bar .track::after { content: ""; position: absolute; top: 5px; bottom: 5px; left: calc(var(--start, 0) * 100%); width: calc(var(--value) * 100%); background: color-mix(in oklab, var(--tone) 16%, var(--bg)); border: 1px solid var(--tone); border-left: 0; border-radius: 0 2px 2px 0; }
+/* Bars: --value is the bar's share of the full width; --start makes a waterfall. A bar is filled
+   with its meaning's colour (.good, .warn, .bad, .info), grey when it means nothing more than its size. */
+.bars { display: grid; gap: 10px; max-width: 720px; margin: 14px 0 20px; }
+.bar { --tone: var(--neutral); display: grid; grid-template-columns: minmax(90px, 180px) 1fr 7em; gap: 12px; align-items: center; font-size: var(--fs-small); }
+.bar .track { position: relative; height: 14px; background: var(--sunken); border-radius: 999px; }
+.bar .track::after { content: ""; position: absolute; top: 0; bottom: 0; left: calc(var(--start, 0) * 100%); width: calc(var(--value) * 100%); background: var(--tone); border-radius: 999px; }
 .bar.good { --tone: var(--good); }
 .bar.warn { --tone: var(--warn); }
 .bar.bad { --tone: var(--bad); }
-.bar .num { font-size: 13px; text-align: right; color: var(--text); font-variant-numeric: tabular-nums; }
+.bar.info { --tone: var(--info); }
+/* Grouped bars: a .group label row per measurement, one bar per system marked .s1 to .s4, keyed by a .stack-key
+   whose items carry the same classes. */
+.bars > .group { margin: 10px 0 0; font-size: var(--fs-label); font-weight: 600; color: var(--ink); }
+.bars > .group:first-child { margin-top: 0; }
+.bar.s1 { --tone: var(--cat-1); }
+.bar.s2 { --tone: var(--cat-2); }
+.bar.s3 { --tone: var(--cat-3); }
+.bar.s4 { --tone: var(--cat-4); }
+.bar .num { font-size: var(--fs-label); text-align: right; color: var(--text); font-variant-numeric: tabular-nums; }
 
 /* Tabs: text tabs over <section data-tab="Label"> panels; every panel shows without JavaScript. */
 .tabs { margin: 20px 0 24px; }
 .tabs > section[data-tab]::before { content: attr(data-tab); display: block; margin: 20px 0 8px; font-weight: 720; color: var(--ink); }
 .tabs.ready > section[data-tab]::before { display: none; }
 .tabs [role="tablist"] { display: flex; gap: 20px; margin-bottom: 16px; overflow-x: auto; border-bottom: 1px solid var(--border); }
-.tabs [role="tab"] { margin-bottom: -1px; padding: 8px 0; font: 600 13.5px var(--font); white-space: nowrap; color: var(--muted); background: none; border: 0; border-bottom: 2px solid transparent; cursor: pointer; }
+.tabs [role="tab"] { margin-bottom: -1px; padding: 8px 0; font: 600 var(--fs-small) var(--font); white-space: nowrap; color: var(--muted); background: none; border: 0; border-bottom: 2px solid transparent; cursor: pointer; }
 .tabs [role="tab"]:hover { color: var(--ink); }
 .tabs [role="tab"][aria-selected="true"] { color: var(--ink); border-bottom-color: var(--ink); }
 
 /* Draw the difference: <ins> an addition, <del> a removal, each with a sign so colour isn't the only cue. */
 .arch.two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 ins, del { text-decoration: none; }
-ins { color: var(--good); }
-del { color: var(--bad); }
+ins { color: var(--good-text); }
+del { color: var(--bad-text); }
 ins::before { content: "+ "; }
 del::before { content: "− "; }
+/* A bullet that is wholly an addition or removal reads as a diff row: tinted, its sign in the margin, its text in the normal colour. */
+ul > li:has(> :is(ins, del):only-child) { position: relative; margin: 0 0 2px -26px; padding: 2px 8px 2px 32px; list-style: none; border-radius: 4px; }
+ul > li:has(> ins:only-child) { background: color-mix(in oklab, var(--good) 14%, transparent); }
+ul > li:has(> del:only-child) { background: color-mix(in oklab, var(--bad) 14%, transparent); }
+ul > li > :is(ins, del):only-child { color: inherit; }
+ul > li > :is(ins, del):only-child::before { position: absolute; left: 12px; font-weight: 600; }
+ul > li > ins:only-child::before { color: var(--good-text); }
+ul > li > del:only-child::before { color: var(--bad-text); }
 
 /* Stack: parts of one whole, 2px apart. Parts take the categorical palette in order; .good/.warn/.bad
    give a part its meaning, .rest greys it, a key item marked .empty names the remainder. */
 .stack { max-width: 720px; margin: 14px 0 10px; }
 .stack + .stack { margin-top: 20px; }
-.stack-title { margin: 0 0 6px; font-size: 14px; font-weight: 600; color: var(--ink); }
-.stack-bar { display: flex; gap: 2px; height: 16px; }
-.stack-bar > span { flex: 0 0 calc(var(--value) * 100% - 2px); background: color-mix(in oklab, var(--swatch) 40%, var(--bg)); border: 1px solid var(--swatch); border-radius: 2px; }
-.stack-key { display: flex; flex-wrap: wrap; gap: 6px 24px; max-width: none; margin: 8px 0 0; padding: 0; list-style: none; font-size: 13px; color: var(--text-2); }
+.stack-title { margin: 0 0 6px; font-size: var(--fs-small); font-weight: 600; color: var(--ink); }
+.stack-bar { display: flex; height: 14px; overflow: hidden; background: var(--sunken); border-radius: 999px; }
+.stack-bar > span { flex: 0 0 calc(var(--value) * 100%); background: var(--swatch); }
+/* Stack rows: several wholes split the same way, each a row with its label and total, sharing one key. */
+.stack-row { display: grid; grid-template-columns: minmax(60px, 140px) 1fr 7em; gap: 12px; align-items: center; margin: 0 0 8px; font-size: var(--fs-small); }
+.stack-row > .num { font-size: var(--fs-label); text-align: right; font-variant-numeric: tabular-nums; }
+.stack-key { display: flex; flex-wrap: wrap; gap: 6px 24px; max-width: none; margin: 8px 0 0; padding: 0; list-style: none; font-size: var(--fs-label); color: var(--text-2); }
 .stack-key li { display: flex; align-items: center; margin: 0; padding: 0; }
-.stack-key li::before { content: ""; width: 10px; height: 10px; margin-right: 8px; background: color-mix(in oklab, var(--swatch) 40%, var(--bg)); border: 1px solid var(--swatch); border-radius: 2px; }
+.stack-key li::before { content: ""; width: 10px; height: 10px; margin-right: 8px; background: var(--swatch); border: 1px solid var(--swatch); border-radius: 2px; }
 .stack-key b { margin-left: 0.35em; font-weight: 600; color: var(--ink); }
 :is(.stack-bar > span, .stack-key li):nth-child(8n + 1) { --swatch: var(--cat-1); }
 :is(.stack-bar > span, .stack-key li):nth-child(8n + 2) { --swatch: var(--cat-2); }
@@ -307,8 +416,13 @@ del::before { content: "− "; }
 :is(.stack-bar > span, .stack-key li).good { --swatch: var(--good); }
 :is(.stack-bar > span, .stack-key li).warn { --swatch: var(--warn); }
 :is(.stack-bar > span, .stack-key li).bad { --swatch: var(--bad); }
-:is(.stack-bar > span, .stack-key li).rest { --swatch: var(--muted); }
+:is(.stack-bar > span, .stack-key li).info { --swatch: var(--info); }
+:is(.stack-bar > span, .stack-key li).rest { --swatch: var(--neutral); }
 .stack-key li.empty::before { background: none; border-color: var(--muted); }
+.stack-key > li.s1 { --swatch: var(--cat-1); }
+.stack-key > li.s2 { --swatch: var(--cat-2); }
+.stack-key > li.s3 { --swatch: var(--cat-3); }
+.stack-key > li.s4 { --swatch: var(--cat-4); }
 
 /* Sparkline in a .metric; the .value above is its last point. */
 .spark { display: block; width: 120px; height: 24px; margin: 6px 0 2px; overflow: visible; }
@@ -320,16 +434,16 @@ del::before { content: "− "; }
 /* Mermaid: kit-js draws it in the kit's font and colours. class <node> good|warn|bad colours a node. */
 pre.mermaid { font-family: var(--font); background: none; }
 pre.mermaid[data-processed] { margin: 24px 0; padding: 8px 0; text-align: left; border: 0; border-radius: 0; overflow-x: auto; }
-pre.mermaid.failed::before { content: attr(data-error); display: block; margin-bottom: 8px; font: 14px/1.4 var(--font); color: var(--bad); white-space: normal; }
+pre.mermaid.failed::before { content: attr(data-error); display: block; margin-bottom: 8px; font: var(--fs-small)/1.4 var(--font); color: var(--bad-text); white-space: normal; }
 pre.mermaid svg { max-width: 100%; height: auto; }
 pre.mermaid.wide svg { max-width: none; }
 .mermaid .node.good :is(rect, polygon, circle, path) { fill: var(--good-soft) !important; stroke: var(--good) !important; }
 .mermaid .node.warn :is(rect, polygon, circle, path) { fill: var(--warn-soft) !important; stroke: var(--warn) !important; }
 .mermaid .node.bad :is(rect, polygon, circle, path) { fill: var(--bad-soft) !important; stroke: var(--bad) !important; }
-.mermaid :is(.edgeLabel, .edgeLabel p, .edgeLabel span) { font-size: 13px; color: var(--muted) !important; }
+.mermaid :is(.edgeLabel, .edgeLabel p, .edgeLabel span) { font-size: var(--fs-label); color: var(--muted) !important; }
 
 /* Hand-drawn SVG: classes on shapes so diagrams follow the theme. */
-.diagram svg { display: block; max-width: 100%; height: auto; font: 14px var(--font); }
+.diagram svg { display: block; max-width: 100%; height: auto; font: var(--fs-small) var(--font); }
 .d-box { fill: var(--bg); stroke: var(--diagram-stroke); }
 .d-good { fill: var(--good-soft); stroke: var(--good); }
 .d-line { fill: none; stroke: var(--muted); stroke-width: 1.25; }
@@ -337,11 +451,13 @@ pre.mermaid.wide svg { max-width: none; }
 .d-text { fill: var(--text); }
 
 @media (max-width: 760px) {
+  .timeline > li { grid-template-columns: 1fr; }
   :root { --gutter: 16px; --fs-h1: 25px; --fs-h2: 18.5px; --fs-lede: 16px; }
   main { padding-top: 24px; padding-bottom: 72px; }
   h2 { margin-top: 40px; }
   .anchor { display: none; }
-  .arch, .arch.two { grid-template-columns: 1fr; }
+  .arch, .arch.two, dl.terms { grid-template-columns: 1fr; }
+  dl.terms dd { border-top: 0; }
   .span2 { grid-column: auto; }
   .flow { flex-direction: column; gap: 28px; }
   .flow > li + li::before { top: -23px; left: 50%; margin: 0 0 0 -10px; transform: rotate(90deg); }
