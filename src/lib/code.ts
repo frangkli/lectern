@@ -30,3 +30,21 @@ export function codeBlock(code: string, lang: string, meta = "") {
   if (!title) return pre;
   return `<figure class="lectern-code"><figcaption>${escapeHtml(title[1] ?? title[2] ?? title[3])}</figcaption>${pre}</figure>`;
 }
+
+// A whole file as highlighted HTML, each line linkable as #L<n> (lectern.css numbers them). The language comes from
+// the extension, or the file name for files like Dockerfile; anything else shows as plain text.
+export async function sourceHtml(code: string, name: string) {
+  const ext = /\.([\w+-]+)$/.exec(name)?.[1].toLowerCase() ?? name.toLowerCase();
+  const lang = known(ext) ? ext : "text";
+  if (lang !== "text") await highlighter.loadLanguage(lang);
+  return highlighter.codeToHtml(code.replace(/\n$/, ""), {
+    lang,
+    themes: { light: "github-light", dark: "github-dark" },
+    defaultColor: false,
+    transformers: [{
+      line(node, line) {
+        node.properties.id = `L${line}`;
+      },
+    }],
+  });
+}

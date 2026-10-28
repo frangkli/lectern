@@ -168,6 +168,18 @@ export function withHeadingIds(html: string) {
   return { html: out, headings };
 }
 
+// Inline code citing a file in the document's repo, like `src/a.ts:42`, `a.ts:40-52` or `src/a.ts`,
+// becomes a link: href gets the tracked path and the "#L40-L52" lines, if any. A path matches a tracked
+// file exactly, or as the end of exactly one tracked path; anything else stays as written.
+export function linkSources(html: string, files: Set<string>, href: (path: string, lines: string) => string) {
+  return html.replace(/(?<!<(?:pre|a)\b[^>]*>\s*)<code>([\w.@+-][\w./@+-]*)(?::(\d+)(?:-(\d+))?)?<\/code>/g, (match, path: string, from?: string, to?: string) => {
+    if (!from && !path.includes("/")) return match;
+    const matches = files.has(path) ? [path] : [...files].filter((file) => file.endsWith(`/${path}`));
+    if (matches.length !== 1) return match;
+    return `<a class="lectern-src" href="${href(matches[0], from ? `#L${from}${to ? `-L${to}` : ""}` : "")}">${match}</a>`;
+  });
+}
+
 // A document as the browser gets it: Markdown rendered with the kit, every heading linkable. An HTML
 // document carries a copy of the kit from when it was written; it gets the current one instead.
 export async function documentHtml(file: string) {

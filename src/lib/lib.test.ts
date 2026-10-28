@@ -1,7 +1,7 @@
 import { describe, expect, test } from "vitest";
 import { loadLanguages } from "./code";
 import { diffHtml } from "./diff";
-import { markdown, parseDocument, withHeadingIds } from "./document";
+import { linkSources, markdown, parseDocument, withHeadingIds } from "./document";
 import { ago, marks } from "./format";
 import { type Doc, type Repo, type Worktree, route, unique } from "./library";
 import { search } from "./search";
@@ -120,4 +120,15 @@ describe("diffHtml", () => {
     expect(html).toContain('<td><del class="lectern-del">4</del><ins class="lectern-ins">5</ins></td>');
     expect(html).toMatch(/class="line diff remove">.*b;[\s\S]*class="line diff add">.*c;/);
   });
+});
+
+test("linkSources links code citing a tracked file, and leaves the rest alone", () => {
+  const files = new Set(["src/lib/a.ts", "src/b.ts", "test/b.ts", "README.md"]);
+  const html = linkSources(markdown("`src/lib/a.ts:42`, `a.ts:4-6`, `src/b.ts`, `b.ts:1`, `README.md`, `x.ts:1`\n\n```\nsrc/b.ts\n```\n"), files, (path, lines) => `/source/app/main/${path}${lines}`);
+  expect(html).toContain('<a class="lectern-src" href="/source/app/main/src/lib/a.ts#L42"><code>src/lib/a.ts:42</code></a>');
+  expect(html).toContain('href="/source/app/main/src/lib/a.ts#L4-L6"><code>a.ts:4-6</code>');
+  expect(html).toContain('href="/source/app/main/src/b.ts"><code>src/b.ts</code>');
+  // Ambiguous, a bare name without a line, unknown, and code blocks stay as written.
+  for (const text of ["<code>b.ts:1</code>", "<code>README.md</code>", "<code>x.ts:1</code>", "<pre><code>src/b.ts"]) expect(html).toContain(text);
+  expect(html.match(/lectern-src/g)).toHaveLength(3);
 });

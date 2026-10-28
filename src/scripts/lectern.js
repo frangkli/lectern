@@ -95,7 +95,19 @@
 
   // Code, after the kit has put each block in a .code box with its copy button: blocks wider than the
   // column get a wrap toggle, and blocks over 25 lines fold to 20 until opened.
-  for (const pre of document.querySelectorAll("main pre.shiki")) {
+  // A source view (pages/source) marks the lines its #L40-L52 hash names and scrolls to them; it never folds.
+  const source = document.querySelector(".lectern-source");
+  if (source) {
+    const mark = () => {
+      const [, from, to = from] = /^#L(\d+)(?:-L(\d+))?$/.exec(location.hash) ?? [];
+      for (const line of source.querySelectorAll(".line")) line.classList.toggle("lectern-marked", Number(line.id.slice(1)) >= from && Number(line.id.slice(1)) <= to);
+      source.querySelector(".lectern-marked")?.scrollIntoView({ block: "center" });
+    };
+    addEventListener("hashchange", mark);
+    mark();
+  }
+
+  for (const pre of document.querySelectorAll("main pre.shiki:not(.lectern-source pre)")) {
     const box = pre.parentElement;
     if (pre.scrollWidth > pre.clientWidth) {
       const wrap = Object.assign(document.createElement("button"), { type: "button", className: "lectern-wrap", title: "Wrap lines" });

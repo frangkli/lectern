@@ -1,0 +1,20 @@
+---
+// A file from a repo, read-only and highlighted, for the file:line links in documents. Only files git
+// tracks are shown; #L42 or #L40-L52 marks lines.
+import { readFile } from "node:fs/promises";
+import IndexLayout from "../../layouts/IndexLayout.astro";
+import { sourceHtml } from "../../lib/code";
+import { sourceFile } from "../../lib/library";
+
+const found = await sourceFile(decodeURIComponent(Astro.url.pathname).slice("/source".length));
+if (!found) return Astro.rewrite("/404");
+const { repo, worktree, path, file } = found;
+const content = await readFile(file);
+// shortcut: big or binary files aren't shown; raise the limit if real citations need it.
+const shown = content.length <= 1 << 20 && !content.includes(0);
+const html = shown ? await sourceHtml(content.toString("utf8"), path.split("/").at(-1)!) : "";
+---
+<IndexLayout title={`${path} · ${repo.name}`} crumbs={[[repo.name, worktree.url], [worktree.key, worktree.url], [path]]} current={repo}>
+  <header class="lectern-head" slot="head"><h1><code>{path}</code></h1><p class="lectern-sub">{repo.name} on {worktree.label}, read-only</p></header>
+  {shown ? <div class="lectern-source" set:html={html} /> : <p class="lectern-empty">Lectern doesn't show this file: it's binary or larger than 1 MB.</p>}
+</IndexLayout>

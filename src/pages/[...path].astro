@@ -7,9 +7,9 @@ import DocList from "../components/DocList.astro";
 import DocLayout from "../layouts/DocLayout.astro";
 import IndexLayout from "../layouts/IndexLayout.astro";
 import { diffHtml } from "../lib/diff";
-import { documentHtml, escapeHtml } from "../lib/document";
+import { documentHtml, escapeHtml, linkSources } from "../lib/document";
 import { ago, drafts, kindName, kindsIn, plural, stamp } from "../lib/format";
-import { type Doc, docRoots, docUrl, library, resolveFile, route } from "../lib/library";
+import { type Doc, docRoots, docUrl, encodePath, library, resolveFile, route, trackedFiles } from "../lib/library";
 import { lastRead } from "../lib/reads";
 import { types } from "../lib/types";
 
@@ -59,6 +59,11 @@ if (rendered && against !== null) {
 } else if (read?.unread) {
   banner = `<p class="lectern-diffbar"><span>Updated since your last read,${readAt}</span><a href="?diff=read">Show changes</a></p>`;
 }
+// Code citing a file in the repo, like `src/a.ts:42`, links to Lectern's view of it, or to the document
+// when it cites one. A local doc cites the main checkout. After the diff, so links don't count as changes.
+const sources = rendered && !repo.notes ? (shown.local ? main : shown) : undefined;
+const cited = (file: string, lines: string) => (/\.(md|html)$/.test(file) && docRoots.some((root) => file.startsWith(`${root}/`)) ? `${sources!.url}/${encodePath(file)}` : `/source${sources!.url}/${encodePath(file)}${lines}`);
+if (rendered && sources) rendered.html = linkSources(rendered.html, await trackedFiles(sources.dir), cited);
 // The docs a worktree's view lists: its own, plus the repo's local docs in the main checkout's view.
 const list = (shown.local ? docs.filter((d) => d.worktree === shown) : docs.filter((d) => d.worktree === shown || (shown.main && d.worktree === repo.local))).toSorted((a, b) => b.mtime - a.mtime);
 const count = drafts(list);
