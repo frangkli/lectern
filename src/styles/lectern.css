@@ -134,6 +134,8 @@
 .lectern-flag { margin-left: 8px; font-size: 13px; font-weight: 500; color: var(--muted); }
 .lectern-flag.draft { color: var(--warn); }
 .lectern-flag.unread { color: var(--info); }
+a.lectern-flag { text-decoration: none; }
+a.lectern-flag:hover { text-decoration: underline; }
 .lectern-summary { margin-top: 6px; overflow: hidden; font-size: 14px; line-height: 22px; color: var(--text-2); text-overflow: ellipsis; white-space: nowrap; }
 .lectern-meta { display: flex; flex-wrap: wrap; align-items: center; margin-top: 8px; font-size: 13px; line-height: 20px; color: var(--muted); }
 .lectern-meta > span { display: inline-flex; align-items: center; min-width: 0; }
@@ -164,6 +166,7 @@
 .lectern-toc[data-ready] li { interpolate-size: allow-keywords; overflow: clip; transition: height 160ms var(--ease), margin-top 160ms var(--ease), opacity 160ms var(--ease), display 160ms allow-discrete; }
 .lectern-toc[data-ready] li[hidden] { display: none; height: 0; margin-top: 0; opacity: 0; }
 @starting-style { .lectern-toc[data-ready] li { height: 0; margin-top: 0; opacity: 0; } }
+.lectern-copies { display: flex; flex-wrap: wrap; gap: 8px; }
 .lectern-copy { height: 28px; padding: 0 10px; font-size: 12.5px; }
 .lectern-copy .lectern-i { width: 13px; height: 13px; }
 :is(.lectern-details, .lectern-versions) { margin-top: 28px; }
@@ -193,6 +196,10 @@
 .lectern-diffbar > span:first-child { flex: 1; font-weight: 500; }
 .lectern-diffbar .lectern-note { margin-left: 4px; font-size: inherit; font-weight: 400; }
 .lectern-key { display: flex; gap: 8px; font-size: 12.5px; }
+/* With changes to step through, the bar stays in view below Lectern's bar. */
+.lectern-diffbar:has(.lectern-step) { position: sticky; z-index: 3; top: var(--stuck, var(--bar)); }
+.lectern-step { display: flex; gap: 6px; }
+.lectern-step .lectern-button { height: 26px; padding: 0 10px; font-size: 12.5px; }
 .lectern-ins { background: var(--ins); }
 .lectern-del { color: var(--muted); text-decoration: line-through var(--bad); background: var(--del); }
 /* In place of the kit's +/− signs (too busy between words), added words are underlined and removed ones struck. */
@@ -294,6 +301,7 @@ main :is(table:not(:is(.scroll, .table-wrap) > table), .lectern-fits > table) > 
   .lectern-head h1 { font-size: 26px; }
   .lectern-filters ul:first-child { flex-wrap: nowrap; margin: 0 calc(var(--gutter) * -1); padding: 0 var(--gutter); overflow-x: auto; scrollbar-width: none; }
   .lectern-group h2 { top: 0; }
+  .lectern-diffbar > span:first-child { flex-basis: 100%; }
   /* The bar scrolls away here, so nothing sits above a sticky header. */
   :root { --row-x: 12px; --stuck: 0px; }
   .lectern-item { column-gap: 12px; }

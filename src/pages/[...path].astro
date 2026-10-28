@@ -1,7 +1,7 @@
 ---
 // A repository's documents on one branch, a document, or a file beside a document.
 import { readFile } from "node:fs/promises";
-import { extname } from "node:path";
+import { extname, posix } from "node:path";
 import BranchMenu from "../components/BranchMenu.astro";
 import DocList from "../components/DocList.astro";
 import DocLayout from "../layouts/DocLayout.astro";
@@ -9,7 +9,7 @@ import IndexLayout from "../layouts/IndexLayout.astro";
 import { diffHtml } from "../lib/diff";
 import { documentHtml, escapeHtml, linkSources } from "../lib/document";
 import { ago, drafts, kindName, kindsIn, plural, stamp } from "../lib/format";
-import { type Doc, docRoots, docUrl, encodePath, library, resolveFile, route, trackedFiles } from "../lib/library";
+import { type Doc, docRoots, docUrl, encodePath, library, localRoot, resolveFile, route, trackedFiles } from "../lib/library";
 import { lastRead } from "../lib/reads";
 import { types } from "../lib/types";
 
@@ -55,15 +55,16 @@ if (rendered && against !== null) {
   if (before === undefined || after === undefined) return Astro.redirect(docUrl(doc!), 302);
   rendered.html = rendered.html.replace(content, (_, open, __, close) => open + diffHtml(before, after) + close);
   const label = read && against === "read" ? `${before === after ? "No changes" : "Changes"} since your last read,${readAt}` : `${before === after ? "No changes" : "Changes"} against ${escapeHtml(against)}`;
-  banner = `<p class="lectern-diffbar"><span>${label}</span><span class="lectern-key"><ins class="lectern-ins">Added</ins> <del class="lectern-del">Removed</del></span><a href="${docUrl(doc!)}">Show document</a></p>`;
+  banner = `<p class="lectern-diffbar"><span>${label}</span><span class="lectern-key"><ins class="lectern-ins">Added</ins> <del class="lectern-del">Removed</del></span>${before === after ? "" : '<span class="lectern-step"><button class="lectern-button" type="button" data-step="-1">Previous</button><button class="lectern-button" type="button" data-step="1">Next</button></span>'}<a href="${docUrl(doc!)}">Show document</a></p>`;
 } else if (read?.unread) {
   banner = `<p class="lectern-diffbar"><span>Updated since your last read,${readAt}</span><a href="?diff=read">Show changes</a></p>`;
 }
 // Code citing a file in the repo, like `src/a.ts:42`, links to Lectern's view of it, or to the document
 // when it cites one. A local doc cites the main checkout. After the diff, so links don't count as changes.
+// A citation starting ./ or ../ can be relative to the document's folder.
 const sources = rendered && !repo.notes ? (shown.local ? main : shown) : undefined;
 const cited = (file: string, lines: string) => (/\.(md|html)$/.test(file) && docRoots.some((root) => file.startsWith(`${root}/`)) ? `${sources!.url}/${encodePath(file)}` : `/source${sources!.url}/${encodePath(file)}${lines}`);
-if (rendered && sources) rendered.html = linkSources(rendered.html, await trackedFiles(sources.dir), cited);
+if (rendered && sources) rendered.html = linkSources(rendered.html, await trackedFiles(sources.dir), cited, posix.dirname(shown.local ? `${localRoot}/${path}` : path!));
 // The docs a worktree's view lists: its own, plus the repo's local docs in the main checkout's view.
 const list = (shown.local ? docs.filter((d) => d.worktree === shown) : docs.filter((d) => d.worktree === shown || (shown.main && d.worktree === repo.local))).toSorted((a, b) => b.mtime - a.mtime);
 const count = drafts(list);

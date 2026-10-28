@@ -1,6 +1,6 @@
 ---
-// The rail beside a document: Copy link, what it is, what to compare it with and where else it lives,
-// then its contents.
+// The rail beside a document: Copy link (and Copy Markdown on a Markdown document), what it is, what to
+// compare it with and where else it lives, then its contents.
 // Narrow screens open it as a drawer from the menu button above the document.
 import type { Heading } from "../lib/document";
 import { ago, kindName, shownPath, stamp, statusOf } from "../lib/format";
@@ -21,7 +21,10 @@ const label = headings.length ? "Contents and details" : "Details";
   <button class="lectern-button lectern-rail-open" type="button" popovertarget="lectern-rail" aria-label={label} title={label}><Icon name="menu" /></button>
 </div>
 <aside class="lectern-rail" id="lectern-rail" popover aria-label="About this document">
-  <button class="lectern-button lectern-copy" type="button" data-copy><Icon name="link" /><span>Copy link</span></button>
+  <div class="lectern-copies">
+    <button class="lectern-button lectern-copy" type="button" data-copy><Icon name="link" /><span>Copy link</span></button>
+    {doc.path.endsWith(".md") && <button class="lectern-button lectern-copy" type="button" data-copy={`/raw${docUrl(doc)}`}><span>Copy Markdown</span></button>}
+  </div>
   <section class="lectern-details">
     <h2>Details</h2>
     <dl>

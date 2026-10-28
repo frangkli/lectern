@@ -1,5 +1,5 @@
 import { readFile } from "node:fs/promises";
-import { basename, extname } from "node:path";
+import { basename, extname, posix } from "node:path";
 import GithubSlugger from "github-slugger";
 import { defineMdastPlugin, markdownToHtml } from "satteri";
 import { codeBlock, loadLanguages } from "./code";
@@ -63,11 +63,14 @@ export function parseDocument(source: string, path: string) {
   return { title: fields.title || /^# (.+)$/m.exec(body)?.[1] || "", kind: fields.kind, summary: clip(fields.description || summary), text: body, decisions: decisionsIn(body, false) };
 }
 
-// Raw HTML in a Markdown document shows as text, so a document can never run code in Lectern.
+// Raw HTML in a Markdown document shows as text, so a document can never run code in Lectern. The one
+// exception is a collapsed section: a block opening with <details> (or <details open>) and its plain-text
+// <summary>, and a </details> that ends it. An opening tag without its summary can only be inline, so stays text.
+const collapsed = /^(?:<details(?: open)?>\s*<summary>[^<]*<\/summary>|<\/details>)$/;
 const rawHtmlAsText = defineMdastPlugin({
   name: "raw-html-as-text",
   html(node, ctx) {
-    ctx.replaceNode(node, { type: "text", value: node.value });
+    if (!collapsed.test(node.value.trim())) ctx.replaceNode(node, { type: "text", value: node.value });
   },
 });
 
@@ -171,10 +174,13 @@ export function withHeadingIds(html: string) {
 // Inline code citing a file in the document's repo, like `src/a.ts:42`, `a.ts:40-52` or `src/a.ts`,
 // becomes a link: href gets the tracked path and the "#L40-L52" lines, if any. A path matches a tracked
 // file exactly, or as the end of exactly one tracked path; anything else stays as written.
-export function linkSources(html: string, files: Set<string>, href: (path: string, lines: string) => string) {
+export function linkSources(html: string, files: Set<string>, href: (path: string, lines: string) => string, dir = "") {
   return html.replace(/(?<!<(?:pre|a)\b[^>]*>\s*)<code>([\w.@+-][\w./@+-]*)(?::(\d+)(?:-(\d+))?)?<\/code>/g, (match, path: string, from?: string, to?: string) => {
     if (!from && !path.includes("/")) return match;
-    const matches = files.has(path) ? [path] : [...files].filter((file) => file.endsWith(`/${path}`));
+    // A path starting ./ or ../ is relative to dir, the document's folder; ./ may also mean the repo's root.
+    const bare = path.replace(/^\.\//, "");
+    const exact = [/^\.\.?\//.test(path) && posix.join(dir, path), bare].find((candidate) => candidate && files.has(candidate));
+    const matches = exact ? [exact] : [...files].filter((file) => file.endsWith(`/${bare}`));
     if (matches.length !== 1) return match;
     return `<a class="lectern-src" href="${href(matches[0], from ? `#L${from}${to ? `-L${to}` : ""}` : "")}">${match}</a>`;
   });

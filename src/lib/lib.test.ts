@@ -16,6 +16,12 @@ describe("markdown", () => {
   test("shows raw HTML as text", () => {
     expect(markdown("<script>alert(1)</script>\n")).not.toContain("<script>");
   });
+  test("keeps a collapsed section, and nothing else of raw HTML", () => {
+    const html = markdown("<details open>\n<summary>Méthode & sources</summary>\n\n- a\n\n</details>\n\nInline <details> and <summary onclick=x>s</summary>\n");
+    expect(html).toContain("<details open>\n<summary>Méthode & sources</summary>\n<ul>");
+    expect(html).toContain("</details>");
+    expect(html).toContain("<p>Inline &lt;details&gt; and &lt;summary onclick=x&gt;s&lt;/summary&gt;</p>");
+  });
   test("turns GitHub alerts into the kit's callouts and leaves other quotes alone", () => {
     expect(markdown("> [!WARNING]\n> Mind the **gap**.\n")).toContain('<blockquote class="callout risk">\n<p><strong class="callout-title">Warning</strong> Mind the <strong>gap</strong>.</p>\n</blockquote>');
     expect(markdown("> [!TIP]\n> Try this.\n")).toContain('<blockquote class="callout recommend">');
@@ -131,4 +137,11 @@ test("linkSources links code citing a tracked file, and leaves the rest alone", 
   // Ambiguous, a bare name without a line, unknown, and code blocks stay as written.
   for (const text of ["<code>b.ts:1</code>", "<code>README.md</code>", "<code>x.ts:1</code>", "<pre><code>src/b.ts"]) expect(html).toContain(text);
   expect(html.match(/lectern-src/g)).toHaveLength(3);
+});
+
+test("linkSources reads ./ and ../ from the document's folder, and ./ from the repo's root", () => {
+  const files = new Set(["src/a.ts", "docs/plans/b.md", "docs/c.md"]);
+  const html = linkSources(markdown("`./src/a.ts:3`, `./b.md`, `../c.md`, `../../src/a.ts`, `../../../x.ts:1`\n"), files, (path, lines) => `/${path}${lines}`, "docs/plans");
+  for (const href of ["/src/a.ts#L3", "/docs/plans/b.md", "/docs/c.md", "/src/a.ts"]) expect(html).toContain(`href="${href}"`);
+  expect(html.match(/lectern-src/g)).toHaveLength(4);
 });
