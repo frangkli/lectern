@@ -1,15 +1,18 @@
 ---
 // The rail beside a document: its contents, and about it: Copy link (and Copy Markdown on a Markdown
-// document), what it is, what to compare it with and where else it lives. Wide screens pin the about part
-// at the top right of the page, as the library sits at the left; narrower ones keep it above the contents.
-// Narrow screens open the rail as a drawer from the menu button above the document.
+// document), what it is, when you marked it read (with Mark as read), what to compare it with and where
+// else it lives. Wide screens pin the about part at the top right of the page, as the library sits at the
+// left; narrower ones keep it above the contents. Narrow screens open the rail as a drawer from the menu
+// button above the document.
 import type { Heading } from "../lib/document";
 import { ago, kindName, shownPath, stamp, statusOf } from "../lib/format";
 import { type Doc, docUrl } from "../lib/library";
 import Icon from "./Icon.astro";
 import Time from "./Time.astro";
 
-const { doc, headings, docs, read, against } = Astro.props as { doc: Doc; headings: Heading[]; docs: Doc[]; read?: { mtime: number }; against: string | null };
+const { doc, headings, docs, read, marked, version, against } = Astro.props as { doc: Doc; headings: Heading[]; docs: Doc[]; read?: { mtime: number; unread: boolean }; marked?: number; version: number; against: string | null };
+// When you marked this version read, or else the earlier version you last marked, if any.
+const lastMark = marked ?? (read?.unread ? read.mtime : undefined);
 const status = statusOf(doc);
 const state = { draft: ["Draft", "Only on this branch, or changed here"], merged: ["Merged", "On the default branch"], local: ["Local", "Never committed"] }[status];
 const where = doc.worktree.key === "~notes" ? "Notes" : doc.local ? `${doc.repo}, local` : `${doc.repo}, ${doc.worktree.key}`;
@@ -33,6 +36,11 @@ const label = headings.length ? "Contents and details" : "Details";
       <div><dt>Kind</dt><dd>{kindName(doc.kind)}</dd></div>
       <div><dt>Status</dt><dd><span class={`lectern-state ${status}`}>{state[0]}</span><span class="lectern-note">{state[1]}</span></dd></div>
       <div><dt>Updated</dt><dd><Time ms={doc.mtime} text={ago(doc.mtime)} /><span class="lectern-note">{stamp(doc.mtime)}</span></dd></div>
+      <div><dt>Read</dt><dd data-marked={marked && version}>
+        {lastMark === undefined ? "Not yet" : <Time ms={lastMark} text={ago(lastMark)} />}
+        {lastMark !== undefined && <span class="lectern-note">{marked ? "This version" : "An earlier version"}</span>}
+        {!marked && <button class="lectern-button" type="button" data-read={version}>Mark as read</button>}
+      </dd></div>
       <div><dt>Location</dt><dd>{where}<code>{shownPath(doc)}</code></dd></div>
     </dl>
   </section>

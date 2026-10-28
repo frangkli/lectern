@@ -19,10 +19,12 @@ interface Props {
   crumbs: [string, string?][];
   current: unknown;
   banner: string;
-  read?: { mtime: number };
+  read?: { mtime: number; unread: boolean };
+  marked?: number;
+  version: number;
   against: string | null;
 }
-const { html, headings, doc, docs, crumbs, current, banner, read, against } = Astro.props;
+const { html, headings, doc, docs, crumbs, current, banner, read, marked, version, against } = Astro.props;
 const attributes = (text = "") => Object.fromEntries([...text.matchAll(/([^\s=]+)(?:="([^"]*)")?/g)].map(([, name, value]) => [name, value ?? ""]));
 const date = new Date(doc.mtime);
 const eyebrow = `${kindName(doc.kind)} · ${months[date.getMonth()].slice(0, 3)} ${date.getDate()}, ${date.getFullYear()}`;
@@ -39,7 +41,7 @@ const body = bodyMatch?.[2] ?? shown;
   <head><Fragment set:html={head} /><Head /></head>
   <body {...bodyAttributes}>
     <Chrome crumbs={crumbs} doc={doc} current={current} />
-    <Rail doc={doc} headings={headings} docs={docs} read={read} against={against} />
+    <Rail doc={doc} headings={headings} docs={docs} read={read} marked={marked} version={version} against={against} />
     <span id="lectern-main" tabindex="-1"></span>
     <Fragment set:html={body} />
     <Tail />

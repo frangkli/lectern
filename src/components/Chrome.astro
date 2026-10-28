@@ -22,5 +22,5 @@ const symbols: Record<string, string> = {
 ---
 <a class="lectern-skip" href="#lectern-main">Skip to content</a>
 <svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>{Object.entries(symbols).map(([name, paths]) => <symbol id={`lectern-${name}`} viewBox="0 0 16 16" set:html={paths} />)}</defs></svg>
-<Bar crumbs={crumbs} doc={doc && { url: docUrl(doc), mtime: doc.mtime }} home={home} query={query} />
+<Bar crumbs={crumbs} doc={doc && { url: docUrl(doc) }} home={home} query={query} />
 <LibraryNav current={current} />
