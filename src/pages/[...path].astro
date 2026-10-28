@@ -43,8 +43,9 @@ const crumbs: [string, string?][] = repo.notes ? [["Notes", shown.url]] : [[repo
 // The version shown, stamped before it is read, so Mark as read refuses once the file has changed since.
 const version = found && (await versionOf(found.file));
 const rendered = found && (await documentHtml(found.file));
-// ?diff= shows the document with its changes marked since an earlier version: ?diff=read for the one you
-// last read, or ?diff=<branch> for that branch's copy. Without one, a line says when it changed since you read it.
+// ?diff= shows the document with its changes marked since an earlier version: ?diff=read for your last read
+// (or the read before last, with this version marked), or ?diff=<branch> for that branch's copy. Without one,
+// a line says when it changed since your last read.
 const [read, marked] = found ? await Promise.all([lastRead(found.file), markedAt(found.file)]) : [];
 const against = Astro.url.searchParams.get("diff");
 let banner = "";
@@ -57,7 +58,8 @@ if (rendered && against !== null) {
   const [before, after] = [base && content.exec((await documentHtml(base)).html)?.[2], content.exec(rendered.html)?.[2]];
   if (before === undefined || after === undefined) return Astro.redirect(docUrl(doc!), 302);
   rendered.html = rendered.html.replace(content, (_, open, __, close) => open + diffHtml(before, after) + close);
-  const label = read && against === "read" ? `${before === after ? "No changes" : "Changes"} since your last read,${readAt}` : `${before === after ? "No changes" : "Changes"} against ${escapeHtml(against)}`;
+  // With the version on disk already marked, the read to compare with is the one before your last.
+  const label = read && against === "read" ? `${before === after ? "No changes" : "Changes"} since your ${read.unread ? "last read" : "read before last"},${readAt}` : `${before === after ? "No changes" : "Changes"} against ${escapeHtml(against)}`;
   banner = `<p class="lectern-diffbar"><span>${label}</span><span class="lectern-key"><ins class="lectern-ins">Added</ins> <del class="lectern-del">Removed</del></span>${before === after ? "" : '<span class="lectern-step"><button class="lectern-button" type="button" data-step="-1">Previous</button><button class="lectern-button" type="button" data-step="1">Next</button></span>'}${against === "read" && read?.unread ? markButton : ""}<a href="${docUrl(doc!)}">Show document</a></p>`;
 } else if (read?.unread) {
   banner = `<p class="lectern-diffbar"><span>Updated since your last read,${readAt}</span>${markButton}<a href="?diff=read">Show changes</a></p>`;

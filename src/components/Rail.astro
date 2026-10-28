@@ -17,8 +17,9 @@ const status = statusOf(doc);
 const state = { draft: ["Draft", "Only on this branch, or changed here"], merged: ["Merged", "On the default branch"], local: ["Local", "Never committed"] }[status];
 const where = doc.worktree.key === "~notes" ? "Notes" : doc.local ? `${doc.repo}, local` : `${doc.repo}, ${doc.worktree.key}`;
 const others = docs.filter((other) => other.repo === doc.repo && other.path === doc.path && other !== doc).toSorted((a, b) => b.mtime - a.mtime);
-// The versions this one can be compared with: the one you last read, and each other branch's copy.
-const compare = [...(read ? [{ key: "read", text: "Since your last read", ms: read.mtime }] : []), ...others.map((other) => ({ key: other.worktree.key, text: `Against ${other.worktree.key}`, ms: other.mtime }))];
+// The versions this one can be compared with: your last read (or the read before last, with this version
+// marked), and each other branch's copy.
+const compare = [...(read ? [{ key: "read", text: read.unread ? "Since your last read" : "Since your read before last", ms: read.mtime }] : []), ...others.map((other) => ({ key: other.worktree.key, text: `Against ${other.worktree.key}`, ms: other.mtime }))];
 const label = headings.length ? "Contents and details" : "Details";
 ---
 <div class="lectern-rail-head">
