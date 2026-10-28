@@ -1,7 +1,7 @@
 import { describe, expect, test } from "vitest";
 import { loadLanguages } from "./code";
 import { diffHtml } from "./diff";
-import { htmlCodeBlocks, linkSources, markdown, parseDocument, withHeadingIds } from "./document";
+import { htmlCodeBlocks, kit, linkSources, markdown, parseDocument, withHeadingIds, withKit } from "./document";
 import { ago, marks } from "./format";
 import { type Doc, type Repo, type Worktree, route, unique } from "./library";
 import { search } from "./search";
@@ -95,6 +95,20 @@ describe("htmlCodeBlocks", () => {
     const source = '<pre><code class="language-ts">&#1114112;</code></pre>';
     await loadLanguages(source);
     expect(htmlCodeBlocks(source)).toContain("1114112");
+  });
+});
+
+describe("withKit", () => {
+  const lectern = `<style id="kit">${kit.style}</style>`;
+  const lecternJs = `<script id="kit-js">${kit.script}</script>`;
+  test("swaps a linked kit for Lectern's", () => {
+    const html = withKit('<head><link id="kit" rel="stylesheet" href="file:///home/u/.agents/skills/visual-doc/assets/kit.css" /></head><body><main></main><script id="kit-js" src="file:///home/u/kit.js"></script></body>');
+    expect(html).toBe(`<head>${lectern}</head><body><main></main>${lecternJs}</body>`);
+  });
+  test("swaps a pasted-in kit for Lectern's, and leaves a page without one alone", () => {
+    expect(withKit('<style id="kit">old</style><style>.mine {}</style><script id="kit-js">old()</script>')).toBe(`${lectern}<style>.mine {}</style>${lecternJs}`);
+    const own = '<link rel="stylesheet" href="own.css"><style>.mine {}</style><script src="own.js"></script>';
+    expect(withKit(own)).toBe(own);
   });
 });
 
